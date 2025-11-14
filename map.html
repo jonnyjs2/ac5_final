@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="utf-8">
+    <title>Seattle Parks</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <!-- Mapbox -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js"></script>
+
+    <!-- Your Styles -->
+    <link rel="stylesheet" href="css/map.css">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+
+<body>
+
+    <header>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="map.html">Map</a>
+            <a href="sources.html">Sources</a>
+        </nav>
+    </header>
+
+    <button id="toggle-panel">☰ Parks</button>
+
+    <main id="container">
+
+        <div id="side-panel">
+            <h2>Seattle Parks</h2>
+
+            <button id="sort-btn">Sort by PMA (desc) <br> (may take a few seconds)</button>
+
+            <table>
+                <tr>
+                    <th>Park Name</th>
+                    <th>PMA</th>
+                    <th>Area (sq.m)</th>
+                </tr>
+            </table>
+        </div>
+
+        <div id="map"></div>
+    </main>
+
+    <script>
+        mapboxgl.accessToken =
+            'pk.eyJ1Ijoiam9ubnlqczIiLCJhIjoiY21oZG56a3h5MDUybzJscHU5dDlveHEyMyJ9.Zj4MO5kQbqLf6QDwWWTs2A';
+
+        let map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/outdoors-v12',
+            zoom: 11,
+            center: [-122.335167, 47.608013]
+        });
+
+        async function geojsonFetch() {
+            let response, parks, neighborhoods;
+
+            response = await fetch('assets/parks.geojson');
+            parks = await response.json();
+
+            response = await fetch('assets/neighborhoods.geojson');
+            neighborhoods = await response.json();
+
+            let table = document.querySelector("table");
+
+            for (let feature of parks.features) {
+                let row = table.insertRow(-1);
+                row.insertCell(0).innerHTML = feature.properties.NAME;
+                row.insertCell(1).innerHTML = feature.properties.PMA;
+                row.insertCell(2).innerHTML = feature.properties.PARKSBND_AREA.toFixed(0);
+            }
+
+            map.on('load', function () {
+                map.addSource('parks', { type: 'geojson', data: parks });
+                map.addLayer({
+                    id: 'parks-layer',
+                    type: 'circle',
+                    source: 'parks',
+                    paint: {
+                        'circle-radius': 6,
+                        'circle-color': '#2ecc71',
+                        'circle-stroke-color': '#1abc9c',
+                        'circle-stroke-width': 2
+                    }
+                });
+
+                map.addSource('neighborhoods', { type: 'geojson', data: neighborhoods });
+                map.addLayer({
+                    id: 'neighborhoods-layer',
+                    type: 'fill',
+                    source: 'neighborhoods',
+                    paint: {
+                        'fill-color': '#3498db',
+                        'fill-opacity': 0.3
+                    }
+                });
+            });
+        }
+
+        geojsonFetch();
+
+        const sortBtn = document.getElementById("sort-btn");
+
+        sortBtn.addEventListener("click", function () {
+            let table = document.querySelector("table");
+            let switching = true;
+
+            while (switching) {
+                switching = false;
+                let rows = table.rows;
+
+                for (let i = 1; i < rows.length - 1; i++) {
+                    let x = parseFloat(rows[i].cells[1].innerHTML);
+                    let y = parseFloat(rows[i + 1].cells[1].innerHTML);
+
+                    if (x < y) {
+                        rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                        switching = true;
+                        break;
+                    }
+                }
+            }
+        });
+
+        const sidebar = document.getElementById("side-panel");
+        const toggleBtn = document.getElementById("toggle-panel");
+
+        toggleBtn.addEventListener("click", () => {
+            sidebar.classList.toggle("collapsed");
+            toggleBtn.classList.toggle("shifted");
+        });
+    </script>
+
+</body>
+</html>
