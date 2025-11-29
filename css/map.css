@@ -41,7 +41,7 @@ header {
     position: absolute;
     top: calc(60px + 20px);
     right: 20px;
-    width: 400px;
+    width: 500px;
     max-height: calc(100vh - 140px);
     background: rgba(255,255,255,0.95);
     border-radius: 8px;
@@ -49,13 +49,13 @@ header {
     overflow-y: auto;
     box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     z-index: 999;
-    
+
     transition: transform 0.3s ease;
     transform: translateX(0);
 }
 
 #side-panel.collapsed {
-    transform: translateX(450px); 
+    transform: translateX(450px);
 }
 
 #toggle-panel.shifted {
@@ -90,3 +90,9 @@ tr:nth-child(even) {
         display: none;
     }
 }
+
+#sort-btn, #sort-distance-btn { margin-right: 8px; }
+
+td.distance-cell { text-align: right; font-variant-numeric: tabular-nums; }
+
+th.distance-header { text-align: right; }

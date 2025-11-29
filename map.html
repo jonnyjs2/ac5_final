@@ -32,12 +32,14 @@
             <h2>Seattle Parks</h2>
 
             <button id="sort-btn">Sort by PMA (desc) <br> (may take a few seconds)</button>
+            <button id="sort-distance-btn">Sort by Distance</button>
 
             <table>
                 <tr>
                     <th>Park Name</th>
                     <th>PMA</th>
                     <th>Area (sq.m)</th>
+                    <th class="distance-header">Distance</th>
                 </tr>
             </table>
         </div>
@@ -56,23 +58,35 @@
             center: [-122.335167, 47.608013]
         });
 
+        let parksData = null;
+
         async function geojsonFetch() {
             let response, parks, neighborhoods;
 
             response = await fetch('assets/parks.geojson');
             parks = await response.json();
+            parksData = parks;
 
             response = await fetch('assets/neighborhoods.geojson');
             neighborhoods = await response.json();
 
             let table = document.querySelector("table");
 
-            for (let feature of parks.features) {
+            // populate table rows and store index on each row
+            parks.features.forEach((feature, idx) => {
                 let row = table.insertRow(-1);
+                row.dataset.parkIndex = idx;
+                row.dataset.distanceMeters = Infinity;
+
                 row.insertCell(0).innerHTML = feature.properties.NAME;
                 row.insertCell(1).innerHTML = feature.properties.PMA;
-                row.insertCell(2).innerHTML = feature.properties.PARKSBND_AREA.toFixed(0);
-            }
+                // ensure area is numeric and shown without decimals
+                row.insertCell(2).innerHTML = Number(feature.properties.PARKSBND_AREA || 0).toFixed(0);
+
+                let dcell = row.insertCell(3);
+                dcell.className = "distance-cell";
+                dcell.innerText = "—";
+            });
 
             map.on('load', function () {
                 map.addSource('parks', { type: 'geojson', data: parks });
@@ -104,7 +118,6 @@
         geojsonFetch();
 
         const sortBtn = document.getElementById("sort-btn");
-
         sortBtn.addEventListener("click", function () {
             let table = document.querySelector("table");
             let switching = true;
@@ -126,9 +139,119 @@
             }
         });
 
+        // This function find the distance in meters between two coordinate sets
+        function haversineDistanceMeters(lat1, lon1, lat2, lon2) {
+            function toRad(deg) { return deg * Math.PI / 180; }
+            const R = 6371000;
+            const dLat = toRad(lat2 - lat1);
+            const dLon = toRad(lon2 - lon1);
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // This creates a point from the coordinates and checks the data is good
+        function getFeatureLonLat(feature) {
+            if (!feature || !feature.geometry) return null;
+            const geom = feature.geometry;
+            if (geom.type === "Point") {
+                return geom.coordinates;
+            }
+            return null;
+        }
+
+        // format meters into km string
+        function formatDistance(meters) {
+            if (!isFinite(meters)) return "—";
+            if (meters < 1000) {
+                return Math.round(meters) + " m";
+            } else {
+                return (meters / 1000).toFixed(2) + " km";
+            }
+        }
+
+        // Sort by Distance button logic
+        const sortDistanceBtn = document.getElementById("sort-distance-btn");
+        sortDistanceBtn.addEventListener("click", function () {
+            if (!parksData || !parksData.features) {
+                alert("Parks data is still loading — try again in a second.");
+                return;
+            }
+
+            // Asks the user for their devices location
+            if (!navigator.geolocation) {
+                alert("Geolocation is not available in this browser.");
+                return;
+            }
+
+            sortDistanceBtn.disabled = true;
+            sortDistanceBtn.innerText = "Requesting location...";
+
+            navigator.geolocation.getCurrentPosition(function (pos) {
+                const userLat = pos.coords.latitude;
+                const userLon = pos.coords.longitude;
+
+                // compute distance for each row using its parkIndex
+                const table = document.querySelector("table");
+                const rows = Array.from(table.rows).slice(1);
+
+                const rowsWithDistances = rows.map(row => {
+                    const idx = parseInt(row.dataset.parkIndex, 10);
+                    const feat = parksData.features[idx];
+                    let coords = getFeatureLonLat(feat);
+                    let distance = Infinity;
+                    if (coords && coords.length >= 2) {
+                        const featLon = coords[0];
+                        const featLat = coords[1];
+                        distance = haversineDistanceMeters(userLat, userLon, featLat, featLon);
+                    } else {
+                        distance = Infinity;
+                    }
+                    row.dataset.distanceMeters = distance;
+                    const dcell = row.cells[3];
+                    dcell.innerText = formatDistance(distance);
+                    return { row, distance };
+                });
+
+                rowsWithDistances.sort((a, b) => a.distance - b.distance);
+
+                for (let entry of rowsWithDistances) {
+                    table.tBodies[0].appendChild(entry.row);
+                }
+
+                sortDistanceBtn.innerText = "Sort by Distance";
+                sortDistanceBtn.disabled = false;
+
+                // This focuses the map to the closest green space
+                const closest = rowsWithDistances[0];
+                if (closest && closest.row) {
+                    const idx = parseInt(closest.row.dataset.parkIndex, 10);
+                    const feat = parksData.features[idx];
+                    const coords = getFeatureLonLat(feat);
+                    if (coords) {
+                        map.flyTo({ center: coords, zoom: 14 });
+                    }
+                }
+
+            }, function (err) {
+                sortDistanceBtn.disabled = false;
+                sortDistanceBtn.innerText = "Sort by Distance";
+                if (err.code === err.PERMISSION_DENIED) {
+                    alert("Location permission denied. Can't sort by distance.");
+                } else {
+                    alert("Unable to get location: " + (err.message || "unknown error"));
+                }
+            }, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            });
+        });
+
         const sidebar = document.getElementById("side-panel");
         const toggleBtn = document.getElementById("toggle-panel");
-
         toggleBtn.addEventListener("click", () => {
             sidebar.classList.toggle("collapsed");
             toggleBtn.classList.toggle("shifted");
