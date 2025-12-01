@@ -59,6 +59,7 @@
         });
 
         let parksData = null;
+        let userMarker = null; // <-- store user's location marker so we can remove/update it
 
         async function geojsonFetch() {
             let response, parks, neighborhoods;
@@ -193,6 +194,15 @@
                 const userLat = pos.coords.latitude;
                 const userLon = pos.coords.longitude;
 
+                // Create or move a marker for the user's location
+                if (userMarker) {
+                    userMarker.remove();
+                    userMarker = null;
+                }
+                userMarker = new mapboxgl.Marker({ color: '#0074D9' })
+                    .setLngLat([userLon, userLat])
+                    .addTo(map);
+
                 // compute distance for each row using its parkIndex
                 const table = document.querySelector("table");
                 const rows = Array.from(table.rows).slice(1);
@@ -224,14 +234,11 @@
                 sortDistanceBtn.innerText = "Sort by Distance";
                 sortDistanceBtn.disabled = false;
 
-                // This focuses the map to the closest green space
-                const closest = rowsWithDistances[0];
-                if (closest && closest.row) {
-                    const idx = parseInt(closest.row.dataset.parkIndex, 10);
-                    const feat = parksData.features[idx];
-                    const coords = getFeatureLonLat(feat);
-                    if (coords) {
-                        map.flyTo({ center: coords, zoom: 14 });
+                // Focus the map onto the user's location marker
+                if (userMarker) {
+                    map.flyTo({ center: [userLon, userLat], zoom: 14 });
+                    if (userMarker.getPopup) {
+                        userMarker.togglePopup();
                     }
                 }
 
