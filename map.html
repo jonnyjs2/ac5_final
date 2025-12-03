@@ -58,7 +58,9 @@
 
         let parksData = null;
         let userMarker = null;
-
+        let userLat = null, userLon = null;
+        let originalParksGeoJSON = null;
+        
         async function geojsonFetch() {
             let response, parks, neighborhoods;
 
