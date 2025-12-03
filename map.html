@@ -8,48 +8,60 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha2016-ej3L+R0tI9Q+8W75t8l1W3tY2/s4l2+1E4L5r8M+S4Y="
         crossorigin=""/>
-    <!-- Load Tailwind CSS for modern styling (e.g., the info box) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Set the map container size */
-        #map {
-            height: 100vh;
-            width: 100%;
-        }
-        /* Custom styling for the hover tooltip/popup */
-        .leaflet-tooltip.park-tooltip {
-            background-color: #f7fafc; /* light grey background */
-            border: 2px solid #38a169; /* green border */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            font-weight: bold;
-            padding: 5px 10px;
-            border-radius: 8px;
-            pointer-events: none; /* Allows clicks to go through to the map below */
-        }
-        .leaflet-tooltip-bottom:before, .leaflet-tooltip-top:before {
-            border-top-color: #38a169;
-        }
-    </style>
-</head>
-<body class="font-sans antialiased">
+    
+    <!-- Link to the external stylesheet -->
+    <link rel="stylesheet" href="map.css">
 
-    <div id="map"></div>
+    <!-- Load Tailwind CSS for modern styling (used for tooltip content) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<!-- Removed all inline classes (font-sans antialiased) for cleaner structure -->
+<body>
+    <header class="bg-white shadow-md p-3">
+        <h1 class="text-xl font-bold">Interactive GeoJSON Map</h1>
+    </header>
+
+    <div id="container">
+        <!-- The map div is now inside the container -->
+        <div id="map"></div>
+        
+        <!-- Toggle button for the side panel -->
+        <div id="toggle-panel">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+        </div>
+
+        <!-- Side panel for filters/info (initially visible) -->
+        <div id="side-panel">
+            <h2 class="text-lg font-semibold mb-4">Park & Neighborhood Info</h2>
+            <p>Hover over a green area on the map to see the park name and size.</p>
+            <p class="mt-4 text-sm text-gray-500">This panel is ready for future filters or detailed information about clicked features.</p>
+            <!-- Mock data table to satisfy CSS table selectors -->
+            <table class="mt-6">
+                <thead>
+                    <tr><th>Key</th><th>Value</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Feature Count</td><td id="feature-count">0</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 
     <!-- Load Leaflet JavaScript -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha2016-ej3L+R0tI9Q+8W75t8l1W3tY2/s4l2+1E4L5r8M+S4Y="
         crossorigin=""></script>
 
-    <!-- The main logic is now in a standard script block -->
+    <!-- The main logic is in the standard script block -->
     <script>
         // Check for the special content path variable for GeoJSON files.
-        // This ensures the files load both in this editor and on GitHub (where it defaults to './').
         const BASE_PATH = typeof __fs_content_fetch_url_base__ !== 'undefined' ? __fs_content_fetch_url_base__ : './';
         
         /**
          * Utility function to fetch and parse a GeoJSON file.
-         * @param {string} fileName - The name of the GeoJSON file (e.g., 'parks.geojson').
-         * @returns {Promise<object>} The parsed GeoJSON object.
          */
         async function loadGeoJson(fileName) {
             const filePath = BASE_PATH + fileName;
@@ -77,7 +89,8 @@
             ]);
             
             // --- 1. INITIALIZE MAP ---
-            const map = L.map('map').setView([47.6062, -122.3321], 12); // Centered near Seattle
+            // Set map to default view centered near Seattle
+            const map = L.map('map').setView([47.6062, -122.3321], 12); 
 
             // Add a base tile layer (OpenStreetMap)
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -105,7 +118,6 @@
              * Sets up the interactive hover tooltip and styling.
              */
             function onEachParkFeature(feature, layer) {
-                // Get data from GeoJSON properties
                 const name = feature.properties.NAME || 'Unnamed Green Space';
                 // Assuming PARKSBND_AREA is in square feet, convert to acres
                 const area = feature.properties.PARKSBND_AREA ? 
@@ -158,6 +170,12 @@
                 onEachFeature: onEachParkFeature
             }).addTo(map);
             
+            // Update feature count in side panel
+            const featureCountElement = document.getElementById('feature-count');
+            if (parksData.features && featureCountElement) {
+                featureCountElement.textContent = parksData.features.length;
+            }
+
             // Check if any features were successfully loaded before attempting to fit bounds
             if (parksData.features && parksData.features.length > 0) {
                  // Fit the map bounds to the parks layer so they are all visible
@@ -186,9 +204,21 @@
             }
         }
 
-        // Start the map initialization process when the script loads
-        initMap();
+        // --- 4. SIDE PANEL TOGGLE LOGIC ---
+        function setupPanelToggle() {
+            const toggleButton = document.getElementById('toggle-panel');
+            const sidePanel = document.getElementById('side-panel');
 
+            if (toggleButton && sidePanel) {
+                toggleButton.addEventListener('click', () => {
+                    sidePanel.classList.toggle('collapsed');
+                });
+            }
+        }
+
+        // Start the map initialization and setup panel logic
+        initMap();
+        setupPanelToggle();
     </script>
 </body>
 </html>
