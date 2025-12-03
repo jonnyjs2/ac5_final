@@ -1,15 +1,18 @@
+/* --- Structural Styles (from your layout) --- */
 body {
     margin: 0;
     padding: 0;
 }
 
 header {
+    /* Ensures the header stays visible on top of the map */
     position: sticky;
     top: 0;
     z-index: 999;
 }
 
 #container {
+    /* The main container for the map and side panel */
     display: flex;
     height: 100vh;
     flex-direction: row;
@@ -17,6 +20,7 @@ header {
 }
 
 #map {
+    /* Ensures map covers the full screen area behind the panels */
     position: absolute;
     top: 0;
     left: 0;
@@ -25,6 +29,7 @@ header {
 }
 
 
+/* Toggle Button for Side Panel */
 #toggle-panel {
     position: fixed;
     top: 100px;
@@ -37,9 +42,11 @@ header {
     cursor: pointer;
 }
 
+/* Side Panel */
 #side-panel {
+    /* Positioned relative to the viewport, above the map */
     position: absolute;
-    top: calc(60px + 20px);
+    top: calc(60px + 20px); /* Below the header (assuming header height ~60px) */
     right: 20px;
     width: 400px;
     max-height: calc(100vh - 140px);
@@ -50,20 +57,23 @@ header {
     box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     z-index: 999;
     
+    /* Animation for collapsing */
     transition: transform 0.3s ease;
     transform: translateX(0);
 }
 
 #side-panel.collapsed {
+    /* Move panel completely off-screen to the right */
     transform: translateX(450px); 
 }
 
+/* Ensure the toggle button doesn't look weird when the panel is collapsed */
 #toggle-panel.shifted {
     right: 20px !important;
 }
 
 
-
+/* Table Styling (for content within the side panel) */
 button {
     margin-bottom: 10px;
 }
@@ -85,8 +95,31 @@ tr:nth-child(even) {
     background-color: #f2f2f2;
 }
 
+/* Hide side panel on smaller screens */
 @media (max-width: 1024px) {
     #side-panel {
         display: none;
     }
+} 
+
+
+/* --- Custom Leaflet/Hover Styles --- */
+
+/* Custom styling for the hover tooltip/popup */
+.leaflet-tooltip.park-tooltip {
+    /* light grey background */
+    background-color: #f7fafc; 
+    /* green border */
+    border: 2px solid #38a169; 
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-weight: bold;
+    padding: 5px 10px;
+    border-radius: 8px;
+    /* Allows clicks to go through to the map below */
+    pointer-events: none; 
+}
+
+/* Styles for the arrow on the tooltip */
+.leaflet-tooltip-bottom:before, .leaflet-tooltip-top:before {
+    border-top-color: #38a169;
 }
