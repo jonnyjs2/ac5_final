@@ -91,7 +91,7 @@ tr:nth-child(even) {
     }
 }
 
-#sort-btn, #sort-distance-btn { margin-right: 8px; }
+#sort-btn, #sort-distance-btn, #buffer-btn, #buffer-select { margin-right: 8px; }
 
 td.distance-cell { text-align: right; font-variant-numeric: tabular-nums; }
 
