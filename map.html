@@ -1,654 +1,194 @@
 <!DOCTYPE html>
-<html lang="en-US">
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Seattle Parks - Interactive Map</title>
-    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
-
-    <!-- Mapbox CSS -->
-    <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
-    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Park Map</title>
+    <!-- Load Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha2016-ej3L+R0tI9Q+8W75t8l1W3tY2/s4l2+1E4L5r8M+S4Y="
+        crossorigin=""/>
+    <!-- Load Tailwind CSS for modern styling (e.g., the info box) -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Reset and Base Styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            overflow: hidden;
-            background: #f0f2f5;
-        }
-
-        /* Header Styles */
-        header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 0;
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        nav {
-            display: flex;
-            justify-content: flex-start;
-            align-items: center;
-            height: 50px;
-            padding: 0 20px;
-        }
-
-        nav a {
-            color: white;
-            text-decoration: none;
-            padding: 0 20px;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            transition: all 0.3s ease;
-            font-weight: 500;
-            position: relative;
-        }
-
-        nav a:after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            width: 0;
-            height: 3px;
-            background: white;
-            transform: translateX(-50%);
-            transition: width 0.3s ease;
-        }
-
-        nav a:hover:after {
-            width: 80%;
-        }
-
-        nav a:hover {
-            background: rgba(255,255,255,0.1);
-        }
-
-        /* Toggle Button */
-        #toggle-panel {
-            position: fixed;
-            top: 65px;
-            left: 15px;
-            z-index: 999;
-            background: white;
-            color: #667eea;
-            border: 2px solid #667eea;
-            padding: 10px 15px;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            font-weight: 600;
-        }
-
-        #toggle-panel:hover {
-            background: #667eea;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(102,126,234,0.3);
-        }
-
-        #toggle-panel.shifted {
-            left: 365px;
-        }
-
-        /* Main Container */
-        #container {
-            display: flex;
-            height: calc(100vh - 50px);
-            margin-top: 50px;
-            position: relative;
-        }
-
-        /* Side Panel */
-        #side-panel {
-            width: 350px;
-            background: white;
-            overflow-y: auto;
-            transition: transform 0.3s ease;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-            z-index: 998;
-            position: relative;
-        }
-
-        #side-panel.collapsed {
-            transform: translateX(-100%);
-        }
-
-        #side-panel h2 {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            margin: 0;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            font-size: 1.3rem;
-            letter-spacing: 0.5px;
-        }
-
-        #sort-btn {
-            width: calc(100% - 30px);
-            margin: 15px;
-            padding: 12px;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        #sort-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(245,87,108,0.3);
-        }
-
-        /* Table Styles */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        table thead {
-            position: sticky;
-            top: 68px;
-            z-index: 5;
-        }
-
-        table th {
-            background: #f8f9fa;
-            padding: 12px 10px;
-            text-align: left;
-            font-weight: 600;
-            color: #495057;
-            border-bottom: 2px solid #dee2e6;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        table td {
-            padding: 12px 10px;
-            border-bottom: 1px solid #e9ecef;
-            font-size: 14px;
-            color: #212529;
-        }
-
-        table tbody tr {
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-
-        table tbody tr:hover {
-            background: linear-gradient(90deg, #f8f9ff 0%, #f0f4ff 100%);
-            transform: translateX(5px);
-        }
-
-        table tbody tr:hover td:first-child {
-            color: #667eea;
-            font-weight: 600;
-        }
-
-        /* Map Container */
+        /* Set the map container size */
         #map {
-            flex: 1;
-            position: relative;
-            background: #e3e8ee;
+            height: 100vh;
+            width: 100%;
         }
-
-        /* Enhanced Popup Styles */
-        .mapboxgl-popup {
-            max-width: 320px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        /* Custom styling for the hover tooltip/popup */
+        .leaflet-tooltip.park-tooltip {
+            background-color: #f7fafc; /* light grey background */
+            border: 2px solid #38a169; /* green border */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 8px;
+            pointer-events: none; /* Allows clicks to go through to the map below */
         }
-        
-        .mapboxgl-popup-content {
-            padding: 0;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-            overflow: hidden;
-        }
-
-        .mapboxgl-popup-close-button {
-            display: none;
-        }
-        
-        .popup-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 15px 20px;
-            color: white;
-        }
-
-        .popup-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin: 0;
-            letter-spacing: 0.3px;
-        }
-
-        .popup-body {
-            padding: 15px 20px;
-        }
-        
-        .popup-info {
-            font-size: 14px;
-            color: #495057;
-            margin: 10px 0;
-            display: flex;
-            align-items: center;
-        }
-        
-        .popup-label {
-            font-weight: 600;
-            color: #6c757d;
-            margin-right: 8px;
-            min-width: 80px;
-        }
-
-        .popup-value {
-            color: #212529;
-            flex: 1;
-        }
-
-        .popup-value.highlight {
-            font-weight: 700;
-            color: #667eea;
-        }
-
-        /* Loading indicator */
-        #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            z-index: 100;
-        }
-
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Scrollbar Styling */
-        #side-panel::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        #side-panel::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-
-        #side-panel::-webkit-scrollbar-thumb {
-            background: #667eea;
-            border-radius: 4px;
-        }
-
-        #side-panel::-webkit-scrollbar-thumb:hover {
-            background: #764ba2;
+        .leaflet-tooltip-bottom:before, .leaflet-tooltip-top:before {
+            border-top-color: #38a169;
         }
     </style>
 </head>
+<body class="font-sans antialiased">
 
-<body>
+    <div id="map"></div>
 
-    <header>
-        <nav>
-            <a href="index.html">Home</a>
-            <a href="map.html">Map</a>
-            <a href="sources.html">Sources</a>
-        </nav>
-    </header>
+    <!-- Load Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha2016-ej3L+R0tI9Q+8W75t8l1W3tY2/s4l2+1E4L5r8M+S4Y="
+        crossorigin=""></script>
 
-    <button id="toggle-panel">☰ Parks</button>
-
-    <main id="container">
-
-        <div id="side-panel">
-            <h2>🌳 Seattle Parks</h2>
-
-            <button id="sort-btn">Sort by PMA Score ↓</button>
-
-            <table id="parks-table">
-                <thead>
-                    <tr>
-                        <th>Park Name</th>
-                        <th>PMA</th>
-                        <th>Area</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Table rows will be inserted here -->
-                </tbody>
-            </table>
-        </div>
-
-        <div id="map">
-            <div id="loading">
-                <div class="spinner"></div>
-                <div>Loading map...</div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Mapbox JS - Load at the end of body -->
-    <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
-    
+    <!-- The main logic is now in a standard script block -->
     <script>
-        // Wait for window and Mapbox to load
-        window.addEventListener('load', function() {
+        // Check for the special content path variable for GeoJSON files.
+        // This ensures the files load both in this editor and on GitHub (where it defaults to './').
+        const BASE_PATH = typeof __fs_content_fetch_url_base__ !== 'undefined' ? __fs_content_fetch_url_base__ : './';
+        
+        /**
+         * Utility function to fetch and parse a GeoJSON file.
+         * @param {string} fileName - The name of the GeoJSON file (e.g., 'parks.geojson').
+         * @returns {Promise<object>} The parsed GeoJSON object.
+         */
+        async function loadGeoJson(fileName) {
+            const filePath = BASE_PATH + fileName;
+            try {
+                const response = await fetch(filePath);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error(`Could not load GeoJSON file ${filePath}:`, error);
+                // Return an empty FeatureCollection if loading fails
+                return { type: "FeatureCollection", features: [] };
+            }
+        }
+
+        /**
+         * Initializes the map after all GeoJSON data has been loaded.
+         */
+        async function initMap() {
+            // Load both files concurrently
+            const [neighborhoodsData, parksData] = await Promise.all([
+                loadGeoJson('neighborhoods.geojson'),
+                loadGeoJson('parks.geojson')
+            ]);
             
-            // Check if mapboxgl is available
-            if (typeof mapboxgl === 'undefined') {
-                document.getElementById('loading').innerHTML = 
-                    '<div style="color: red;">Error: Mapbox GL JS failed to load. Please check your internet connection.</div>';
-                return;
+            // --- 1. INITIALIZE MAP ---
+            const map = L.map('map').setView([47.6062, -122.3321], 12); // Centered near Seattle
+
+            // Add a base tile layer (OpenStreetMap)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(map);
+            
+            // Define the default style for all park features
+            function parkStyle(feature) {
+                return {
+                    fillColor: '#38A169', // Primary park green
+                    weight: 2,
+                    opacity: 1,
+                    color: 'white',
+                    dashArray: '3',
+                    fillOpacity: 0.7
+                };
             }
 
-            // Mapbox Access Token
-            mapboxgl.accessToken = 'pk.eyJ1Ijoiam9ubnlqczIiLCJhIjoiY21oZG56a3h5MDUybzJscHU5dDlveHEyMyJ9.Zj4MO5kQbqLf6QDwWWTs2A';
+            // --- 2. PARKS LAYER WITH HOVER FEATURE (Tooltip) ---
+            let parksLayer;
 
-            // Initialize map
-            let map = new mapboxgl.Map({
-                container: 'map',
-                style: 'mapbox://styles/mapbox/outdoors-v12',
-                zoom: 11,
-                center: [-122.335167, 47.608013],
-                pitch: 0,
-                bearing: 0
-            });
+            /**
+             * Function executed for every single feature in the parks GeoJSON layer.
+             * Sets up the interactive hover tooltip and styling.
+             */
+            function onEachParkFeature(feature, layer) {
+                // Get data from GeoJSON properties
+                const name = feature.properties.NAME || 'Unnamed Green Space';
+                // Assuming PARKSBND_AREA is in square feet, convert to acres
+                const area = feature.properties.PARKSBND_AREA ? 
+                            `${(feature.properties.PARKSBND_AREA / 43560).toFixed(2)} acres` : 
+                            'Area Unknown';
 
-            // Create popup instance
-            let popup = new mapboxgl.Popup({
-                closeButton: false,
-                closeOnClick: false,
-                offset: [0, -10]
-            });
-
-            let hoveredParkId = null;
-
-            // Function to format area
-            function formatArea(squareMeters) {
-                const acres = (squareMeters * 0.000247105).toFixed(1);
-                if (acres < 1) {
-                    return `${(squareMeters * 10.7639).toFixed(0)} sq ft`;
-                }
-                return `${acres} acres`;
-            }
-
-            // Function to create popup content
-            function createPopupContent(properties) {
-                const area = formatArea(properties.PARKSBND_AREA);
-                const pmaScore = properties.PMA ? properties.PMA.toLocaleString() : 'N/A';
-                
-                let html = `
-                    <div class="popup-header">
-                        <h3 class="popup-title">${properties.NAME || 'Unknown Park'}</h3>
+                // Create the content for the hover tooltip using Tailwind classes
+                const tooltipContent = `
+                    <div class="park-tooltip-content">
+                        <span class="text-lg text-green-700">${name}</span><br/>
+                        <span class="text-sm text-gray-600">Area: ${area}</span>
                     </div>
-                    <div class="popup-body">
-                        <div class="popup-info">
-                            <span class="popup-label">📊 PMA Score:</span>
-                            <span class="popup-value highlight">${pmaScore}</span>
-                        </div>
-                        <div class="popup-info">
-                            <span class="popup-label">📏 Area:</span>
-                            <span class="popup-value">${area}</span>
-                        </div>`;
-                
-                // Add quality level if available
-                if (properties.SDQL) {
-                    html += `
-                        <div class="popup-info">
-                            <span class="popup-label">🏆 Quality:</span>
-                            <span class="popup-value">${properties.SDQL}</span>
-                        </div>`;
-                }
-                
-                html += `</div>`;
-                
-                return html;
-            }
+                `;
 
-            // Main data loading function
-            async function loadMapData() {
-                try {
-                    // Try loading from same directory first
-                    let parksResponse, neighborhoodsResponse;
-                    
-                    try {
-                        parksResponse = await fetch('parks.geojson');
-                        neighborhoodsResponse = await fetch('neighborhoods.geojson');
-                    } catch (e) {
-                        // If files not found, try assets directory
-                        parksResponse = await fetch('assets/parks.geojson');
-                        neighborhoodsResponse = await fetch('assets/neighborhoods.geojson');
-                    }
-
-                    if (!parksResponse.ok || !neighborhoodsResponse.ok) {
-                        throw new Error('Could not load GeoJSON files');
-                    }
-
-                    const parks = await parksResponse.json();
-                    const neighborhoods = await neighborhoodsResponse.json();
-
-                    // Hide loading indicator
-                    document.getElementById('loading').style.display = 'none';
-
-                    // Populate table
-                    const tableBody = document.querySelector('#parks-table tbody');
-                    parks.features.forEach((feature, index) => {
-                        const row = tableBody.insertRow();
-                        row.dataset.parkId = index;
-                        
-                        const nameCell = row.insertCell(0);
-                        nameCell.textContent = feature.properties.NAME;
-                        
-                        const pmaCell = row.insertCell(1);
-                        pmaCell.textContent = feature.properties.PMA || 'N/A';
-                        
-                        const areaCell = row.insertCell(2);
-                        areaCell.textContent = formatArea(feature.properties.PARKSBND_AREA);
-                        
-                        // Add click handler to fly to park
-                        row.addEventListener('click', () => {
-                            const coords = feature.geometry.coordinates;
-                            map.flyTo({
-                                center: coords,
-                                zoom: 15,
-                                pitch: 45,
-                                duration: 2000
-                            });
-                            
-                            // Show popup for selected park
-                            popup.setLngLat(coords)
-                                .setHTML(createPopupContent(feature.properties))
-                                .addTo(map);
-                        });
-                    });
-
-                    // Add data to map when loaded
-                    map.on('load', () => {
-                        // Add neighborhoods layer first (background)
-                        map.addSource('neighborhoods', {
-                            type: 'geojson',
-                            data: neighborhoods
-                        });
-
-                        map.addLayer({
-                            id: 'neighborhoods-layer',
-                            type: 'fill',
-                            source: 'neighborhoods',
-                            paint: {
-                                'fill-color': '#e3f2fd',
-                                'fill-opacity': 0.4,
-                                'fill-outline-color': '#90caf9'
-                            }
-                        });
-
-                        // Add parks source with generated IDs
-                        map.addSource('parks', {
-                            type: 'geojson',
-                            data: parks,
-                            generateId: true  // This generates unique IDs for features
-                        });
-
-                        // Add parks layer with dynamic sizing
-                        map.addLayer({
-                            id: 'parks-layer',
-                            type: 'circle',
-                            source: 'parks',
-                            paint: {
-                                'circle-radius': [
-                                    'interpolate',
-                                    ['linear'],
-                                    ['zoom'],
-                                    10, ['/', ['sqrt', ['get', 'PARKSBND_AREA']], 25],
-                                    15, ['/', ['sqrt', ['get', 'PARKSBND_AREA']], 10]
-                                ],
-                                'circle-color': [
-                                    'case',
-                                    ['boolean', ['feature-state', 'hover'], false],
-                                    '#764ba2',
-                                    '#667eea'
-                                ],
-                                'circle-stroke-color': '#ffffff',
-                                'circle-stroke-width': 2,
-                                'circle-opacity': 0.9
-                            }
-                        });
-
-                        // Mouse enter event
-                        map.on('mouseenter', 'parks-layer', (e) => {
-                            map.getCanvas().style.cursor = 'pointer';
-                            
-                            if (e.features.length > 0) {
-                                if (hoveredParkId !== null) {
-                                    map.setFeatureState(
-                                        { source: 'parks', id: hoveredParkId },
-                                        { hover: false }
-                                    );
-                                }
-                                
-                                hoveredParkId = e.features[0].id;
-                                map.setFeatureState(
-                                    { source: 'parks', id: hoveredParkId },
-                                    { hover: true }
-                                );
-                                
-                                // Show popup
-                                const coordinates = e.features[0].geometry.coordinates.slice();
-                                const properties = e.features[0].properties;
-                                
-                                popup.setLngLat(coordinates)
-                                    .setHTML(createPopupContent(properties))
-                                    .addTo(map);
-                            }
-                        });
-
-                        // Mouse leave event
-                        map.on('mouseleave', 'parks-layer', () => {
-                            map.getCanvas().style.cursor = '';
-                            
-                            if (hoveredParkId !== null) {
-                                map.setFeatureState(
-                                    { source: 'parks', id: hoveredParkId },
-                                    { hover: false }
-                                );
-                                hoveredParkId = null;
-                            }
-                            
-                            popup.remove();
-                        });
-
-                        // Click event for parks
-                        map.on('click', 'parks-layer', (e) => {
-                            const coordinates = e.features[0].geometry.coordinates.slice();
-                            
-                            map.flyTo({
-                                center: coordinates,
-                                zoom: 15,
-                                pitch: 45,
-                                duration: 1500
-                            });
-                        });
-                    });
-
-                } catch (error) {
-                    console.error('Error loading data:', error);
-                    document.getElementById('loading').innerHTML = 
-                        `<div style="color: red;">
-                            Error loading map data.<br>
-                            Make sure parks.geojson and neighborhoods.geojson<br>
-                            are in the same folder as this HTML file.
-                        </div>`;
-                }
-            }
-
-            // Load the map data
-            loadMapData();
-
-            // Sort functionality
-            document.getElementById('sort-btn').addEventListener('click', function() {
-                const table = document.getElementById('parks-table');
-                const tbody = table.querySelector('tbody');
-                const rows = Array.from(tbody.querySelectorAll('tr'));
-                
-                const isDesc = this.textContent.includes('↓');
-                
-                rows.sort((a, b) => {
-                    const pmaA = parseFloat(a.cells[1].textContent) || 0;
-                    const pmaB = parseFloat(b.cells[1].textContent) || 0;
-                    return isDesc ? (pmaB - pmaA) : (pmaA - pmaB);
+                // Bind a permanent tooltip that is initially hidden by CSS opacity
+                layer.bindTooltip(tooltipContent, {
+                    permanent: true,     
+                    direction: 'top',    
+                    className: 'park-tooltip opacity-0 transition-opacity duration-200' 
                 });
-                
-                tbody.innerHTML = '';
-                rows.forEach(row => tbody.appendChild(row));
-                
-                this.textContent = isDesc ? 'Sort by PMA Score ↑' : 'Sort by PMA Score ↓';
-            });
 
-            // Toggle panel functionality
-            const sidebar = document.getElementById('side-panel');
-            const toggleBtn = document.getElementById('toggle-panel');
+                // Add event listeners for hover interaction
+                layer.on({
+                    mouseover: (e) => {
+                        // Show tooltip
+                        e.target.getTooltip().getElement().style.opacity = '1';
+                        // Highlight feature
+                        e.target.setStyle({ fillColor: '#68D391', fillOpacity: 0.8 }); 
+                    },
+                    mouseout: (e) => {
+                        // Hide tooltip
+                        e.target.getTooltip().getElement().style.opacity = '0';
+                        // Revert style
+                        parksLayer.resetStyle(e.target);
+                    },
+                    click: (e) => {
+                        // Example: Add a popup on click for more persistent info
+                        L.popup()
+                            .setLatLng(e.latlng)
+                            .setContent(`<h3>${name}</h3><p>Area: ${area}</p>`)
+                            .openOn(map);
+                    }
+                });
+            }
 
-            toggleBtn.addEventListener('click', () => {
-                sidebar.classList.toggle('collapsed');
-                toggleBtn.classList.toggle('shifted');
-                
-                // Resize map after animation
-                setTimeout(() => {
-                    map.resize();
-                }, 300);
-            });
 
-            // Add navigation controls to map
-            map.addControl(new mapboxgl.NavigationControl(), 'top-right');
-            map.addControl(new mapboxgl.ScaleControl(), 'bottom-right');
-        });
+            // Load the Parks GeoJSON Layer
+            parksLayer = L.geoJSON(parksData, {
+                style: parkStyle,
+                onEachFeature: onEachParkFeature
+            }).addTo(map);
+            
+            // Check if any features were successfully loaded before attempting to fit bounds
+            if (parksData.features && parksData.features.length > 0) {
+                 // Fit the map bounds to the parks layer so they are all visible
+                map.fitBounds(parksLayer.getBounds());
+            } else {
+                console.warn("Parks data failed to load features. Setting default view.");
+            }
+           
+
+            // --- 3. NEIGHBORHOODS LAYER ---
+            
+            if (neighborhoodsData.features && neighborhoodsData.features.length > 0) {
+                 L.geoJSON(neighborhoodsData, {
+                    style: function (feature) {
+                        return {
+                            fillColor: '#4A5568', // Dark grey for boundaries
+                            weight: 1,
+                            opacity: 0.5,
+                            color: '#2D3748',
+                            fillOpacity: 0.05 // Very light fill
+                        };
+                    }
+                }).addTo(map);
+            } else {
+                console.warn("Neighborhoods data failed to load features.");
+            }
+        }
+
+        // Start the map initialization process when the script loads
+        initMap();
+
     </script>
-
 </body>
 </html>
