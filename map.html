@@ -5,11 +5,9 @@
     <title>Seattle Parks</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
 
-    <!-- Mapbox -->
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css" rel="stylesheet">
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js"></script>
 
-    <!-- Your Styles -->
     <link rel="stylesheet" href="css/map.css">
     <link rel="stylesheet" href="css/main.css">
 </head>
@@ -59,7 +57,7 @@
         });
 
         let parksData = null;
-        let userMarker = null; // <-- store user's location marker so we can remove/update it
+        let userMarker = null;
 
         async function geojsonFetch() {
             let response, parks, neighborhoods;
@@ -73,7 +71,6 @@
 
             let table = document.querySelector("table");
 
-            // populate table rows and store index on each row
             parks.features.forEach((feature, idx) => {
                 let row = table.insertRow(-1);
                 row.dataset.parkIndex = idx;
@@ -81,7 +78,6 @@
 
                 row.insertCell(0).innerHTML = feature.properties.NAME;
                 row.insertCell(1).innerHTML = feature.properties.PMA;
-                // ensure area is numeric and shown without decimals
                 row.insertCell(2).innerHTML = Number(feature.properties.PARKSBND_AREA || 0).toFixed(0);
 
                 let dcell = row.insertCell(3);
