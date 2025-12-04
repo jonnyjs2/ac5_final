@@ -7,11 +7,12 @@
 
     <!-- Mapbox -->
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css" rel="stylesheet">
-    
-    <!-- Your external CSS files -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js"></script>
+
+    <!-- Your Styles -->
     <link rel="stylesheet" href="css/map.css">
     <link rel="stylesheet" href="css/main.css">
-
+    
     <!-- Additional styles for the hover popup -->
     <style>
         /* Popup styling for hover feature */
@@ -84,9 +85,6 @@
         <div id="map"></div>
     </main>
 
-    <!-- Mapbox GL JS Script -->
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js"></script>
-    
     <script>
         mapboxgl.accessToken =
             'pk.eyJ1Ijoiam9ubnlqczIiLCJhIjoiY21oZG56a3h5MDUybzJscHU5dDlveHEyMyJ9.Zj4MO5kQbqLf6QDwWWTs2A';
@@ -149,7 +147,6 @@
                 });
 
                 // ===== HOVER POPUP FEATURE START =====
-                
                 // Change cursor to pointer when hovering over a park
                 map.on('mouseenter', 'parks-layer', function (e) {
                     map.getCanvas().style.cursor = 'pointer';
@@ -197,7 +194,6 @@
                     map.getCanvas().style.cursor = '';
                     popup.remove();
                 });
-                
                 // ===== HOVER POPUP FEATURE END =====
             });
         }
@@ -238,9 +234,3 @@
 
 </body>
 </html>
-
-
-
-
-
-
