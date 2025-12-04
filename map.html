@@ -1,224 +1,246 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-US">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Park Map</title>
-    <!-- Load Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha2016-ej3L+R0tI9Q+8W75t8l1W3tY2/s4l2+1E4L5r8M+S4Y="
-        crossorigin=""/>
-    
-    <!-- Link to the external stylesheet -->
-    <link rel="stylesheet" href="map.css">
+    <meta charset="utf-8">
+    <title>Seattle Parks</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
 
-    <!-- Load Tailwind CSS for modern styling (used for tooltip content) -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Mapbox -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css" rel="stylesheet">
+    
+    <!-- Your external CSS files -->
+    <link rel="stylesheet" href="css/map.css">
+    <link rel="stylesheet" href="css/main.css">
+
+    <!-- Additional styles for the hover popup -->
+    <style>
+        /* Popup styling for hover feature */
+        .mapboxgl-popup {
+            max-width: 250px;
+            font-family: 'Open Sans', Arial, sans-serif;
+        }
+        
+        .mapboxgl-popup-content {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        
+        .mapboxgl-popup-close-button {
+            display: none;  /* Hide close button for hover popup */
+        }
+        
+        .popup-title {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #2ecc71;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #2ecc71;
+        }
+        
+        .popup-info {
+            font-size: 13px;
+            color: #333;
+            margin: 4px 0;
+        }
+        
+        .popup-label {
+            font-weight: 600;
+            color: #666;
+        }
+    </style>
 </head>
-<!-- Removed all inline classes (font-sans antialiased) for cleaner structure -->
+
 <body>
-    <header class="bg-white shadow-md p-3">
-        <h1 class="text-xl font-bold">Interactive GeoJSON Map</h1>
+
+    <header>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="map.html">Map</a>
+            <a href="sources.html">Sources</a>
+        </nav>
     </header>
 
-    <div id="container">
-        <!-- The map div is now inside the container -->
-        <div id="map"></div>
-        
-        <!-- Toggle button for the side panel -->
-        <div id="toggle-panel">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-            </svg>
-        </div>
+    <button id="toggle-panel">☰ Parks</button>
 
-        <!-- Side panel for filters/info (initially visible) -->
+    <main id="container">
+
         <div id="side-panel">
-            <h2 class="text-lg font-semibold mb-4">Park & Neighborhood Info</h2>
-            <p>Hover over a green area on the map to see the park name and size.</p>
-            <p class="mt-4 text-sm text-gray-500">This panel is ready for future filters or detailed information about clicked features.</p>
-            <!-- Mock data table to satisfy CSS table selectors -->
-            <table class="mt-6">
-                <thead>
-                    <tr><th>Key</th><th>Value</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td>Feature Count</td><td id="feature-count">0</td></tr>
-                </tbody>
+            <h2>Seattle Parks</h2>
+
+            <button id="sort-btn">Sort by PMA (desc) <br> (may take a few seconds)</button>
+
+            <table>
+                <tr>
+                    <th>Park Name</th>
+                    <th>PMA</th>
+                    <th>Area (sq.m)</th>
+                </tr>
             </table>
         </div>
-    </div>
 
+        <div id="map"></div>
+    </main>
 
-    <!-- Load Leaflet JavaScript -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha2016-ej3L+R0tI9Q+8W75t8l1W3tY2/s4l2+1E4L5r8M+S4Y="
-        crossorigin=""></script>
-
-    <!-- The main logic is in the standard script block -->
+    <!-- Mapbox GL JS Script -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js"></script>
+    
     <script>
-        // Check for the special content path variable for GeoJSON files.
-        const BASE_PATH = typeof __fs_content_fetch_url_base__ !== 'undefined' ? __fs_content_fetch_url_base__ : './';
-        
-        /**
-         * Utility function to fetch and parse a GeoJSON file.
-         */
-        async function loadGeoJson(fileName) {
-            const filePath = BASE_PATH + fileName;
-            try {
-                const response = await fetch(filePath);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+        mapboxgl.accessToken =
+            'pk.eyJ1Ijoiam9ubnlqczIiLCJhIjoiY21oZG56a3h5MDUybzJscHU5dDlveHEyMyJ9.Zj4MO5kQbqLf6QDwWWTs2A';
+
+        let map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/outdoors-v12',
+            zoom: 11,
+            center: [-122.335167, 47.608013]
+        });
+
+        // Create popup instance for hover feature
+        let popup = new mapboxgl.Popup({
+            closeButton: false,
+            closeOnClick: false,
+            offset: 10
+        });
+
+        async function geojsonFetch() {
+            let response, parks, neighborhoods;
+
+            response = await fetch('assets/parks.geojson');
+            parks = await response.json();
+
+            response = await fetch('assets/neighborhoods.geojson');
+            neighborhoods = await response.json();
+
+            let table = document.querySelector("table");
+
+            for (let feature of parks.features) {
+                let row = table.insertRow(-1);
+                row.insertCell(0).innerHTML = feature.properties.NAME;
+                row.insertCell(1).innerHTML = feature.properties.PMA;
+                row.insertCell(2).innerHTML = feature.properties.PARKSBND_AREA.toFixed(0);
+            }
+
+            map.on('load', function () {
+                map.addSource('parks', { type: 'geojson', data: parks });
+                map.addLayer({
+                    id: 'parks-layer',
+                    type: 'circle',
+                    source: 'parks',
+                    paint: {
+                        'circle-radius': 6,
+                        'circle-color': '#2ecc71',
+                        'circle-stroke-color': '#1abc9c',
+                        'circle-stroke-width': 2
+                    }
+                });
+
+                map.addSource('neighborhoods', { type: 'geojson', data: neighborhoods });
+                map.addLayer({
+                    id: 'neighborhoods-layer',
+                    type: 'fill',
+                    source: 'neighborhoods',
+                    paint: {
+                        'fill-color': '#3498db',
+                        'fill-opacity': 0.3
+                    }
+                });
+
+                // ===== HOVER POPUP FEATURE START =====
+                
+                // Change cursor to pointer when hovering over a park
+                map.on('mouseenter', 'parks-layer', function (e) {
+                    map.getCanvas().style.cursor = 'pointer';
+                    
+                    // Get park properties from the GeoJSON
+                    const properties = e.features[0].properties;
+                    const coordinates = e.features[0].geometry.coordinates.slice();
+                    
+                    // Convert area from square meters to acres for display
+                    const areaInAcres = (properties.PARKSBND_AREA * 0.000247105).toFixed(2);
+                    
+                    // Build popup HTML with park information
+                    let popupHTML = `
+                        <div class="popup-title">${properties.NAME || 'Unknown Park'}</div>
+                        <div class="popup-info">
+                            <span class="popup-label">PMA Score:</span> ${properties.PMA || 'N/A'}
+                        </div>
+                        <div class="popup-info">
+                            <span class="popup-label">Area:</span> ${areaInAcres} acres
+                        </div>
+                    `;
+                    
+                    // Add quality level if it exists in the data
+                    if (properties.SDQL) {
+                        popupHTML += `
+                            <div class="popup-info">
+                                <span class="popup-label">Quality:</span> ${properties.SDQL}
+                            </div>
+                        `;
+                    }
+                    
+                    // Ensure popup appears at correct location if map is zoomed out
+                    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+                    }
+                    
+                    // Display the popup at the park location
+                    popup.setLngLat(coordinates)
+                        .setHTML(popupHTML)
+                        .addTo(map);
+                });
+
+                // Remove popup and reset cursor when mouse leaves a park
+                map.on('mouseleave', 'parks-layer', function () {
+                    map.getCanvas().style.cursor = '';
+                    popup.remove();
+                });
+                
+                // ===== HOVER POPUP FEATURE END =====
+            });
+        }
+
+        geojsonFetch();
+
+        const sortBtn = document.getElementById("sort-btn");
+
+        sortBtn.addEventListener("click", function () {
+            let table = document.querySelector("table");
+            let switching = true;
+
+            while (switching) {
+                switching = false;
+                let rows = table.rows;
+
+                for (let i = 1; i < rows.length - 1; i++) {
+                    let x = parseFloat(rows[i].cells[1].innerHTML);
+                    let y = parseFloat(rows[i + 1].cells[1].innerHTML);
+
+                    if (x < y) {
+                        rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                        switching = true;
+                        break;
+                    }
                 }
-                return await response.json();
-            } catch (error) {
-                console.error(`Could not load GeoJSON file ${filePath}:`, error);
-                // Return an empty FeatureCollection if loading fails
-                return { type: "FeatureCollection", features: [] };
             }
-        }
+        });
 
-        /**
-         * Initializes the map after all GeoJSON data has been loaded.
-         */
-        async function initMap() {
-            // Load both files concurrently
-            const [neighborhoodsData, parksData] = await Promise.all([
-                loadGeoJson('neighborhoods.geojson'),
-                loadGeoJson('parks.geojson')
-            ]);
-            
-            // --- 1. INITIALIZE MAP ---
-            // Set map to default view centered near Seattle
-            const map = L.map('map').setView([47.6062, -122.3321], 12); 
+        const sidebar = document.getElementById("side-panel");
+        const toggleBtn = document.getElementById("toggle-panel");
 
-            // Add a base tile layer (OpenStreetMap)
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            }).addTo(map);
-            
-            // Define the default style for all park features
-            function parkStyle(feature) {
-                return {
-                    fillColor: '#38A169', // Primary park green
-                    weight: 2,
-                    opacity: 1,
-                    color: 'white',
-                    dashArray: '3',
-                    fillOpacity: 0.7
-                };
-            }
-
-            // --- 2. PARKS LAYER WITH HOVER FEATURE (Tooltip) ---
-            let parksLayer;
-
-            /**
-             * Function executed for every single feature in the parks GeoJSON layer.
-             * Sets up the interactive hover tooltip and styling.
-             */
-            function onEachParkFeature(feature, layer) {
-                const name = feature.properties.NAME || 'Unnamed Green Space';
-                // Assuming PARKSBND_AREA is in square feet, convert to acres
-                const area = feature.properties.PARKSBND_AREA ? 
-                            `${(feature.properties.PARKSBND_AREA / 43560).toFixed(2)} acres` : 
-                            'Area Unknown';
-
-                // Create the content for the hover tooltip using Tailwind classes
-                const tooltipContent = `
-                    <div class="park-tooltip-content">
-                        <span class="text-lg text-green-700">${name}</span><br/>
-                        <span class="text-sm text-gray-600">Area: ${area}</span>
-                    </div>
-                `;
-
-                // Bind a permanent tooltip that is initially hidden by CSS opacity
-                layer.bindTooltip(tooltipContent, {
-                    permanent: true,     
-                    direction: 'top',    
-                    className: 'park-tooltip opacity-0 transition-opacity duration-200' 
-                });
-
-                // Add event listeners for hover interaction
-                layer.on({
-                    mouseover: (e) => {
-                        // Show tooltip
-                        e.target.getTooltip().getElement().style.opacity = '1';
-                        // Highlight feature
-                        e.target.setStyle({ fillColor: '#68D391', fillOpacity: 0.8 }); 
-                    },
-                    mouseout: (e) => {
-                        // Hide tooltip
-                        e.target.getTooltip().getElement().style.opacity = '0';
-                        // Revert style
-                        parksLayer.resetStyle(e.target);
-                    },
-                    click: (e) => {
-                        // Example: Add a popup on click for more persistent info
-                        L.popup()
-                            .setLatLng(e.latlng)
-                            .setContent(`<h3>${name}</h3><p>Area: ${area}</p>`)
-                            .openOn(map);
-                    }
-                });
-            }
-
-
-            // Load the Parks GeoJSON Layer
-            parksLayer = L.geoJSON(parksData, {
-                style: parkStyle,
-                onEachFeature: onEachParkFeature
-            }).addTo(map);
-            
-            // Update feature count in side panel
-            const featureCountElement = document.getElementById('feature-count');
-            if (parksData.features && featureCountElement) {
-                featureCountElement.textContent = parksData.features.length;
-            }
-
-            // Check if any features were successfully loaded before attempting to fit bounds
-            if (parksData.features && parksData.features.length > 0) {
-                 // Fit the map bounds to the parks layer so they are all visible
-                map.fitBounds(parksLayer.getBounds());
-            } else {
-                console.warn("Parks data failed to load features. Setting default view.");
-            }
-           
-
-            // --- 3. NEIGHBORHOODS LAYER ---
-            
-            if (neighborhoodsData.features && neighborhoodsData.features.length > 0) {
-                 L.geoJSON(neighborhoodsData, {
-                    style: function (feature) {
-                        return {
-                            fillColor: '#4A5568', // Dark grey for boundaries
-                            weight: 1,
-                            opacity: 0.5,
-                            color: '#2D3748',
-                            fillOpacity: 0.05 // Very light fill
-                        };
-                    }
-                }).addTo(map);
-            } else {
-                console.warn("Neighborhoods data failed to load features.");
-            }
-        }
-
-        // --- 4. SIDE PANEL TOGGLE LOGIC ---
-        function setupPanelToggle() {
-            const toggleButton = document.getElementById('toggle-panel');
-            const sidePanel = document.getElementById('side-panel');
-
-            if (toggleButton && sidePanel) {
-                toggleButton.addEventListener('click', () => {
-                    sidePanel.classList.toggle('collapsed');
-                });
-            }
-        }
-
-        // Start the map initialization and setup panel logic
-        initMap();
-        setupPanelToggle();
+        toggleBtn.addEventListener("click", () => {
+            sidebar.classList.toggle("collapsed");
+            toggleBtn.classList.toggle("shifted");
+        });
     </script>
+
 </body>
 </html>
+
+
+
+
+
+
