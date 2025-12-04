@@ -5,13 +5,52 @@
     <title>Seattle Parks</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
 
-    <!-- Mapbox -->
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css" rel="stylesheet">
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js"></script>
-
-    <!-- Your Styles -->
+    <!-- Mapbox GL JS CSS -->
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css' rel='stylesheet' />
+    
+    <!-- Your external CSS files -->
     <link rel="stylesheet" href="css/map.css">
     <link rel="stylesheet" href="css/main.css">
+
+    <!-- Additional styles for the hover popup -->
+    <style>
+        /* Popup styling for hover feature */
+        .mapboxgl-popup {
+            max-width: 250px;
+            font-family: 'Open Sans', Arial, sans-serif;
+        }
+        
+        .mapboxgl-popup-content {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        
+        .mapboxgl-popup-close-button {
+            display: none;  /* Hide close button for hover popup */
+        }
+        
+        .popup-title {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #2ecc71;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #2ecc71;
+        }
+        
+        .popup-info {
+            font-size: 13px;
+            color: #333;
+            margin: 4px 0;
+        }
+        
+        .popup-label {
+            font-weight: 600;
+            color: #666;
+        }
+    </style>
 </head>
 
 <body>
@@ -45,6 +84,9 @@
         <div id="map"></div>
     </main>
 
+    <!-- Mapbox GL JS Script -->
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js'></script>
+    
     <script>
         mapboxgl.accessToken =
             'pk.eyJ1Ijoiam9ubnlqczIiLCJhIjoiY21oZG56a3h5MDUybzJscHU5dDlveHEyMyJ9.Zj4MO5kQbqLf6QDwWWTs2A';
@@ -54,6 +96,13 @@
             style: 'mapbox://styles/mapbox/outdoors-v12',
             zoom: 11,
             center: [-122.335167, 47.608013]
+        });
+
+        // Create popup instance for hover feature
+        let popup = new mapboxgl.Popup({
+            closeButton: false,
+            closeOnClick: false,
+            offset: 10
         });
 
         async function geojsonFetch() {
@@ -98,6 +147,58 @@
                         'fill-opacity': 0.3
                     }
                 });
+
+                // ===== HOVER POPUP FEATURE START =====
+                
+                // Change cursor to pointer when hovering over a park
+                map.on('mouseenter', 'parks-layer', function (e) {
+                    map.getCanvas().style.cursor = 'pointer';
+                    
+                    // Get park properties from the GeoJSON
+                    const properties = e.features[0].properties;
+                    const coordinates = e.features[0].geometry.coordinates.slice();
+                    
+                    // Convert area from square meters to acres for display
+                    const areaInAcres = (properties.PARKSBND_AREA * 0.000247105).toFixed(2);
+                    
+                    // Build popup HTML with park information
+                    let popupHTML = `
+                        <div class="popup-title">${properties.NAME || 'Unknown Park'}</div>
+                        <div class="popup-info">
+                            <span class="popup-label">PMA Score:</span> ${properties.PMA || 'N/A'}
+                        </div>
+                        <div class="popup-info">
+                            <span class="popup-label">Area:</span> ${areaInAcres} acres
+                        </div>
+                    `;
+                    
+                    // Add quality level if it exists in the data
+                    if (properties.SDQL) {
+                        popupHTML += `
+                            <div class="popup-info">
+                                <span class="popup-label">Quality:</span> ${properties.SDQL}
+                            </div>
+                        `;
+                    }
+                    
+                    // Ensure popup appears at correct location if map is zoomed out
+                    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+                    }
+                    
+                    // Display the popup at the park location
+                    popup.setLngLat(coordinates)
+                        .setHTML(popupHTML)
+                        .addTo(map);
+                });
+
+                // Remove popup and reset cursor when mouse leaves a park
+                map.on('mouseleave', 'parks-layer', function () {
+                    map.getCanvas().style.cursor = '';
+                    popup.remove();
+                });
+                
+                // ===== HOVER POPUP FEATURE END =====
             });
         }
 
