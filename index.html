@@ -1,29 +1,93 @@
 <!DOCTYPE html>
 <html lang="en-US">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>GreenSpace Finder</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/index.css">
     <link rel="stylesheet" href="css/main.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Find nearby parks and green spaces. Interactive map, accessibility info, and curated resources." />
+
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/index.css">
 </head>
 
 <body>
     <header>
-        <nav>
-            <a href="index.html">Home</a>
-            <a href="map.html">Map</a>
-            <a href="sources.html">Sources</a>
+        <nav aria-label="Primary navigation">
+            <a href="index.html" class="logo">GreenSpace Finder</a>
+            <div class="nav-links">
+                <a href="index.html" aria-current="page">Home</a>
+                <a href="map.html">Map</a>
+                <a href="sources.html">Sources</a>
+            </div>
         </nav>
     </header>
 
-    <main id="hero-container">
+    <main>
+        <section id="hero-container" class="hero" role="region" aria-labelledby="hero-title">
+            <div class="hero-inner">
+                <h1 id="hero-title">Discover Parks & Green Spaces Near You</h1>
+                <p class="lead">
+                    GreenSpace Finder helps you locate nearby public parks, trails, and community gardens — complete with
+                    walking distance, amenities, and accessibility details.
+                </p>
 
-        <div id="intro-box">
-            <h1>Welcome to GreenSpace Finder</h1>
-            <p>Our tool helps you locate the nearest parks and green spaces from any location.</p>
-            <p>Created by: Jonny, Oswaldo, Nur, and Rishi</p>
-        </div>
+                <div class="hero-cta">
+                    <a class="btn primary" href="map.html">Open the Map</a>
+                    <a class="btn ghost" href="sources.html">How we sourced data</a>
+                </div>
+
+                <p class="credits">Created by: Jonny, Oswaldo, Nur, and Rishi</p>
+            </div>
+        </section>
+
+        <section id="features" class="container" aria-labelledby="features-title">
+            <h2 id="features-title" class="section-title">What you can do</h2>
+
+            <div class="cards">
+                <article class="card">
+                    <h3>Find nearby parks</h3>
+                    <p>Search from your current location or drop a pin to discover green spaces within walking distance.</p>
+                </article>
+
+                <article class="card">
+                    <h3>See amenities</h3>
+                    <p>View restroom availability, playgrounds, picnic areas, dog-friendly zones, and public transit access.</p>
+                </article>
+
+                <article class="card">
+                    <h3>Plan accessible trips</h3>
+                    <p>Filter parks by accessibility features and walking route difficulty to plan inclusive visits.</p>
+                </article>
+            </div>
+        </section>
+
+        <section id="quick-info" class="container">
+            <h2 class="section-title">Tips for using GreenSpace Finder</h2>
+            <ul class="tips">
+                <li>Click any park on the map to open the detail panel with photos, distances, and amenity list.</li>
+                <li>Use the filter button on the map page to show/hide playgrounds, trails, and dog areas.</li>
+                <li>If you see an error in a park's data, check the Sources page to learn how to report it.</li>
+            </ul>
+        </section>
     </main>
+
+    <footer>
+        <div class="container footer-inner">
+            <p>&copy; <span id="year"></span> GreenSpace Finder — Built for community & outdoor exploration.</p>
+            <p class="footer-links">
+                <a href="sources.html">Data sources</a> ·
+                <a href="map.html">Map</a> ·
+                <a href="index.html">Home</a>
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // small script for dynamic year and skip-to-content if you add later
+        document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
 </body>
 </html>
