@@ -1,49 +1,62 @@
 <!DOCTYPE html>
 <html lang="en-US">
 <head>
-    <meta charset="utf-8">
-    <title>Sources</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="css/main.css">
+    <meta charset="utf-8" />
+    <title>Sources | GreenSpace Finder</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="css/sources.css" />
 </head>
 
 <body>
-
     <header>
         <nav>
-            <a href="index.html">Home</a>
-            <a href="map.html">Map</a>
-            <a href="sources.html">Sources</a>
+            <a href="index.html" class="logo">GreenSpace Finder</a>
+            <div class="nav-links">
+                <a href="index.html" aria-current="page">Home</a>
+                <a href="map.html">Map</a>
+                <a href="sources.html">Sources</a>
+            </div>
         </nav>
     </header>
 
-    <main id="content">
 
-        <h1>Sources</h1>
+    <main id="content" class="sources-container">
 
-        <p>This page lists all datasets, tools, and references used in creating the WebGIS application.</p>
+        <section class="page-header">
+            <h1>Sources & References</h1>
+            <p class="intro">
+                Below is a complete list of datasets, tools, and citations used in building the
+                GreenSpace Finder WebGIS application.
+            </p>
+        </section>
 
-        <section>
+        <section class="source-section">
             <h2>Datasets</h2>
-            <ul>
-                <li>Park boundary dataset — (source)</li>
-                <li>Neighborhood dataset — (source)</li>
-                <li>Any additional geospatial layers — (source)</li>
+            <ul class="source-list">
+                <li><strong>Park Boundary Dataset</strong> — City of Seattle Open Data Portal</li>
+                <li><strong>Neighborhoods Dataset</strong> — King County GIS Open Data</li>
+                <li><strong>Amenities / Trails / Additional Layers</strong> — OpenStreetMap Contributors</li>
             </ul>
         </section>
 
-        <section>
+        <section class="source-section">
             <h2>Tools & Libraries</h2>
-            <ul>
-                <li>Mapbox GL JS</li>
-                <li>JavaScript Fetch API</li>
-                <li>HTML / CSS / JS</li>
+            <ul class="source-list">
+                <li><strong>Mapbox GL JS</strong> — interactive mapping framework</li>
+                <li><strong>Turf.js</strong> — spatial analysis (buffers, distance, nearest)</li>
+                <li><strong>JavaScript Fetch API</strong> — loading GeoJSON sources</li>
+                <li><strong>HTML / CSS / JavaScript</strong> — UI layout & front-end</li>
             </ul>
         </section>
 
-        <section>
+        <section class="source-section">
             <h2>Citations</h2>
-            <p>(any extras just add here lmao)</p>
+            <p>
+                Add any academic references, data disclaimers, or acknowledgements here.
+                (You can include APA, MLA, or simple web citations.)
+            </p>
         </section>
 
     </main>

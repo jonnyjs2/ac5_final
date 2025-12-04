@@ -5,18 +5,14 @@
     <title>Seattle Parks</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
 
-    <!-- Mapbox GL JS CSS -->
     <link href='https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css' rel='stylesheet' /> 
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js"></script>
 
     
-    <!-- Your external CSS files -->
     <link rel="stylesheet" href="css/map.css">
     <link rel="stylesheet" href="css/main.css">
 
-    <!-- Additional styles for the hover popup -->
     <style>
-        /* Popup styling for hover feature */
         .mapboxgl-popup {
             max-width: 250px;
             font-family: 'Open Sans', Arial, sans-serif;
@@ -30,7 +26,7 @@
         }
         
         .mapboxgl-popup-close-button {
-            display: none;  /* Hide close button for hover popup */
+            display: none; 
         }
         
         .popup-title {
@@ -59,11 +55,16 @@
 
     <header>
         <nav>
-            <a href="index.html">Home</a>
-            <a href="map.html">Map</a>
-            <a href="sources.html">Sources</a>
+            <a href="index.html" class="logo">GreenSpace Finder</a>
+            <div class="nav-links">
+                <a href="index.html" aria-current="page">Home</a>
+                <a href="map.html">Map</a>
+                <a href="sources.html">Sources</a>
+            </div>
         </nav>
     </header>
+
+
 
     <button id="toggle-panel">☰ Parks</button>
 
@@ -86,7 +87,6 @@
         <div id="map"></div>
     </main>
 
-    <!-- Mapbox GL JS Script -->
     <script src='https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js'></script>
     
     <script>
@@ -100,7 +100,6 @@
             center: [-122.335167, 47.608013]
         });
 
-        // Create popup instance for hover feature
         let popup = new mapboxgl.Popup({
             closeButton: false,
             closeOnClick: false,
