@@ -136,18 +136,20 @@
             <!-- Nur: Radius filter feature end -->
 
             <button id="sort-btn">Sort by PMA (desc) <br> (may take a few seconds)</button>
+            <button id="sort-distance-btn">Sort by Distance</button>
 
             <div class="table-container">
                 <table>
-                    <thead>
-                        <tr>
-                            <th>Park Name</th>
-                            <th>PMA</th>
-                            <th>Area (sq.m)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
+                        <thead>
+                            <tr>
+                                <th>Park Name</th>
+                                <th>PMA</th>
+                                <th>Area (sq.m)</th>
+                                <th>Distance (mi)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
                 </table>
             </div>
         </div>
@@ -167,6 +169,23 @@
             zoom: 11,
             center: [-122.335167, 47.608013]
         });
+
+        // Sort by distance button behavior (ascending). Requires distances to be present.
+        const sortDistanceBtn = document.getElementById('sort-distance-btn');
+        if (sortDistanceBtn) {
+            sortDistanceBtn.addEventListener('click', function () {
+                const table = document.querySelector('table');
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.rows);
+                rows.sort((a, b) => {
+                    const da = parseFloat(a.dataset.distance || Infinity);
+                    const db = parseFloat(b.dataset.distance || Infinity);
+                    return da - db;
+                });
+                // re-append rows in sorted order
+                rows.forEach(r => tbody.appendChild(r));
+            });
+        }
 
         let popup = new mapboxgl.Popup({
             closeButton: false,
@@ -236,6 +255,17 @@
                 row.insertCell(0).innerHTML = feature.properties.NAME;
                 row.insertCell(1).innerHTML = feature.properties.PMA;
                 row.insertCell(2).innerHTML = feature.properties.PARKSBND_AREA.toFixed(0);
+                let dcell = row.insertCell(3);
+                dcell.className = 'distance-cell';
+                if (userLocation) {
+                    const parkCoords = feature.geometry.coordinates;
+                    const dist = calculateDistance(userLocation[1], userLocation[0], parkCoords[1], parkCoords[0]);
+                    dcell.innerText = dist.toFixed(2);
+                    row.dataset.distance = dist;
+                } else {
+                    dcell.innerText = '—';
+                    row.dataset.distance = Infinity;
+                }
             }
         }
 
@@ -275,9 +305,23 @@
 
             for (let feature of parks.features) {
                 let row = tbody.insertRow(-1);
+                // store park index for reference
+                row.dataset.parkIndex = parks.features.indexOf(feature);
                 row.insertCell(0).innerHTML = feature.properties.NAME;
                 row.insertCell(1).innerHTML = feature.properties.PMA;
                 row.insertCell(2).innerHTML = feature.properties.PARKSBND_AREA.toFixed(0);
+                // distance cell (miles) - will be computed if we have a userLocation
+                let dcell = row.insertCell(3);
+                dcell.className = 'distance-cell';
+                dcell.innerText = '—';
+            }
+
+            // compute initial distances based on current map center (if available)
+            try {
+                const center = map.getCenter().toArray();
+                updateAllDistances(center);
+            } catch (e) {
+                // map may not be ready yet; distances will update when location is set
             }
 
             map.on('load', function () {
@@ -363,6 +407,24 @@
         }
 
         geojsonFetch();
+
+        // Update all distance cells using a center [lng, lat]
+        function updateAllDistances(center) {
+            if (!center) return;
+            const table = document.querySelector('table');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.rows);
+            rows.forEach((row) => {
+                const parkIdx = row.dataset.parkIndex;
+                if (parkIdx !== undefined && allParksData && allParksData.features[parkIdx]) {
+                    const coords = allParksData.features[parkIdx].geometry.coordinates;
+                    const dist = calculateDistance(center[1], center[0], coords[1], coords[0]);
+                    const cell = row.querySelector('.distance-cell');
+                    if (cell) cell.innerText = dist.toFixed(2);
+                    row.dataset.distance = dist;
+                }
+            });
+        }
 
         const sortBtn = document.getElementById("sort-btn");
 
@@ -502,6 +564,8 @@
                             updateFilteredParks(filteredParks);
                             filterStatus.textContent = `Showing ${filteredParks.features.length} parks within ${currentRadius.toFixed(1)} miles`;
                         }
+                        // Update all distances shown in the table
+                        updateAllDistances(userLocation);
                         
                         useLocationBtn.disabled = false;
                     },
@@ -514,6 +578,7 @@
                         // Fallback to map center (no marker shown for fallback)
                         userLocation = map.getCenter().toArray();
                         locationExplicitlySet = false;
+                        updateAllDistances(userLocation);
                         
                         setTimeout(() => {
                             useLocationBtn.textContent = "Use My Location";
@@ -526,6 +591,7 @@
             } else {
                 alert("Geolocation is not supported by your browser. Using map center as reference.");
                 userLocation = map.getCenter().toArray();
+                updateAllDistances(userLocation);
                 locationExplicitlySet = false;
             }
         });
