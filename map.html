@@ -5,10 +5,10 @@
     <title>Seattle Parks</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
 
-    <link href='https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css' rel='stylesheet' />
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css' rel='stylesheet' /> 
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js"></script>
 
-
+    
     <link rel="stylesheet" href="css/map.css">
     <link rel="stylesheet" href="css/main.css">
 
@@ -17,18 +17,18 @@
             max-width: 250px;
             font-family: 'Open Sans', Arial, sans-serif;
         }
-
+        
         .mapboxgl-popup-content {
             padding: 12px;
             background: rgba(255, 255, 255, 0.95);
             border-radius: 8px;
             box-shadow: 0 3px 10px rgba(0,0,0,0.2);
         }
-
+        
         .mapboxgl-popup-close-button {
-            display: none;
+            display: none; 
         }
-
+        
         .popup-title {
             font-size: 15px;
             font-weight: bold;
@@ -37,17 +37,59 @@
             padding-bottom: 4px;
             border-bottom: 1px solid #2ecc71;
         }
-
+        
         .popup-info {
             font-size: 13px;
             color: #333;
             margin: 4px 0;
         }
-
+        
         .popup-label {
             font-weight: 600;
             color: #666;
         }
+        
+        /* Nur: User location marker styles start */
+        .user-location-marker {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #4285f4;
+            border: 3px solid #ffffff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        
+        .user-location-marker::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #4285f4;
+            opacity: 0.4;
+            animation: pulse 2s infinite;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            margin: 0;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.4;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(2);
+                opacity: 0;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(2);
+                opacity: 0;
+            }
+        }
+        /* Nur: User location marker styles end */
     </style>
 </head>
 
@@ -57,8 +99,8 @@
         <nav>
             <a href="index.html" class="logo">GreenSpace Finder</a>
             <div class="nav-links">
-                <a href="index.html" aria-current="page">Home</a>
-                <a href="map.html">Map</a>
+                <a href="index.html">Home</a>
+                <a href="map.html" aria-current="page">Map</a>
                 <a href="sources.html">Sources</a>
             </div>
         </nav>
@@ -66,31 +108,55 @@
 
 
 
-    <button id="toggle-panel">☰ Parks</button>
+    <button id="toggle-panel">Parks</button>
+    <div id="panel-overlay"></div>
 
     <main id="container">
 
         <div id="side-panel">
             <h2>Seattle Parks</h2>
 
-            <button id="sort-btn">Sort by PMA (desc) <br> (may take a few seconds)</button>
-            <button id="sort-distance-btn">Sort by Distance</button>
+            <!-- Nur: Radius filter feature start -->
+            <div id="radius-filter-container" style="margin-bottom: 15px; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1);">
+                <label for="radius-input" style="display: block; margin-bottom: 8px; font-weight: 600; color: #1f2937; font-size: 14px;">
+                    Filter by Radius (miles):
+                </label>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="range" id="radius-input" min="0" max="10" step="0.5" value="0" 
+                           style="flex: 1; cursor: pointer;">
+                    <span id="radius-value" style="font-weight: 600; color: #1e90ff; min-width: 50px; text-align: right;">0</span>
+                </div>
+                <div style="margin-top: 8px; font-size: 12px; color: #666;">
+                    <span id="filter-status">Showing all parks</span>
+                </div>
+                <button id="use-location-btn" style="width: 100%; margin-top: 8px; font-size: 12px; padding: 8px;">
+                    Use My Location
+                </button>
+            </div>
+            <!-- Nur: Radius filter feature end -->
 
-            <table>
-                <tr>
-                    <th>Park Name</th>
-                    <th>PMA</th>
-                    <th>Area (sq.m)</th>
-                    <th class="distance-header">Distance</th>
-                </tr>
-            </table>
+            <button id="sort-btn">Sort by PMA (desc) <br> (may take a few seconds)</button>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Park Name</th>
+                            <th>PMA</th>
+                            <th>Area (sq.m)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <div id="map"></div>
     </main>
 
     <script src='https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js'></script>
-
+    
     <script>
         mapboxgl.accessToken =
             'pk.eyJ1Ijoiam9ubnlqczIiLCJhIjoiY21oZG56a3h5MDUybzJscHU5dDlveHEyMyJ9.Zj4MO5kQbqLf6QDwWWTs2A';
@@ -102,43 +168,122 @@
             center: [-122.335167, 47.608013]
         });
 
-        let parksData = null;
-        let userMarker = null; // <-- store user's location marker so we can remove/update it
         let popup = new mapboxgl.Popup({
             closeButton: false,
             closeOnClick: false,
             offset: 10
         });
 
+        // Nur: Radius filter feature start - variables
+        let allParksData = null; // Store original parks data
+        let userLocation = null; // Store user's location [lng, lat]
+        let currentRadius = 0; // Current filter radius in miles
+        let userLocationMarker = null; // Store user location marker
+        let locationExplicitlySet = false; // Track if user explicitly set location (not just map center)
+
+        // Nur: Calculate distance between two coordinates using Haversine formula
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 3959; // Earth's radius in miles
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        // Nur: Filter parks based on radius from user location
+        function filterParksByRadius(parksData, centerLocation, radiusMiles) {
+            if (!centerLocation || radiusMiles === 0) {
+                return parksData; // Return all parks if no location or radius is 0
+            }
+
+            const filteredFeatures = parksData.features.filter(feature => {
+                const parkCoords = feature.geometry.coordinates;
+                const distance = calculateDistance(
+                    centerLocation[1], // lat
+                    centerLocation[0], // lng
+                    parkCoords[1],     // park lat
+                    parkCoords[0]      // park lng
+                );
+                return distance <= radiusMiles;
+            });
+
+            return {
+                type: 'FeatureCollection',
+                features: filteredFeatures
+            };
+        }
+
+        // Nur: Update map and table with filtered parks
+        function updateFilteredParks(filteredParks) {
+            // Update map source
+            if (map.getSource('parks')) {
+                map.getSource('parks').setData(filteredParks);
+            }
+
+            // Update table
+            let table = document.querySelector("table");
+            let tbody = table.querySelector("tbody");
+            // Remove all rows from tbody
+            tbody.innerHTML = '';
+
+            // Add filtered parks to table
+            for (let feature of filteredParks.features) {
+                let row = tbody.insertRow(-1);
+                row.insertCell(0).innerHTML = feature.properties.NAME;
+                row.insertCell(1).innerHTML = feature.properties.PMA;
+                row.insertCell(2).innerHTML = feature.properties.PARKSBND_AREA.toFixed(0);
+            }
+        }
+
+        // Nur: Add or update user location marker on map
+        function updateUserLocationMarker(location) {
+            // Remove existing marker if it exists
+            if (userLocationMarker) {
+                userLocationMarker.remove();
+            }
+            
+            // Create marker element
+            const el = document.createElement('div');
+            el.className = 'user-location-marker';
+            
+            // Create and add marker to map
+            userLocationMarker = new mapboxgl.Marker(el)
+                .setLngLat(location)
+                .addTo(map);
+        }
+
+        // Nur: Radius filter feature end
+
         async function geojsonFetch() {
             let response, parks, neighborhoods;
 
             response = await fetch('assets/parks.geojson');
             parks = await response.json();
-            parksData = parks;
+
+            // Nur: Store original parks data for filtering
+            allParksData = parks;
 
             response = await fetch('assets/neighborhoods.geojson');
             neighborhoods = await response.json();
 
             let table = document.querySelector("table");
+            let tbody = table.querySelector("tbody");
 
-            // populate table rows and store index on each row
-            parks.features.forEach((feature, idx) => {
-                let row = table.insertRow(-1);
-                row.dataset.parkIndex = idx;
-                row.dataset.distanceMeters = Infinity;
-
+            for (let feature of parks.features) {
+                let row = tbody.insertRow(-1);
                 row.insertCell(0).innerHTML = feature.properties.NAME;
                 row.insertCell(1).innerHTML = feature.properties.PMA;
-                // ensure area is numeric and shown without decimals
-                row.insertCell(2).innerHTML = Number(feature.properties.PARKSBND_AREA || 0).toFixed(0);
-
-                let dcell = row.insertCell(3);
-                dcell.className = "distance-cell";
-                dcell.innerText = "—";
-            });
+                row.insertCell(2).innerHTML = feature.properties.PARKSBND_AREA.toFixed(0);
+            }
 
             map.on('load', function () {
+                // Nur: Initialize user location to map center
+                userLocation = map.getCenter().toArray();
+
                 map.addSource('parks', { type: 'geojson', data: parks });
                 map.addLayer({
                     id: 'parks-layer',
@@ -164,18 +309,18 @@
                 });
 
                 // ===== HOVER POPUP FEATURE START =====
-
+                
                 // Change cursor to pointer when hovering over a park
                 map.on('mouseenter', 'parks-layer', function (e) {
                     map.getCanvas().style.cursor = 'pointer';
-
+                    
                     // Get park properties from the GeoJSON
                     const properties = e.features[0].properties;
                     const coordinates = e.features[0].geometry.coordinates.slice();
-
+                    
                     // Convert area from square meters to acres for display
                     const areaInAcres = (properties.PARKSBND_AREA * 0.000247105).toFixed(2);
-
+                    
                     // Build popup HTML with park information
                     let popupHTML = `
                         <div class="popup-title">${properties.NAME || 'Unknown Park'}</div>
@@ -186,7 +331,7 @@
                             <span class="popup-label">Area:</span> ${areaInAcres} acres
                         </div>
                     `;
-
+                    
                     // Add quality level if it exists in the data
                     if (properties.SDQL) {
                         popupHTML += `
@@ -195,12 +340,12 @@
                             </div>
                         `;
                     }
-
+                    
                     // Ensure popup appears at correct location if map is zoomed out
                     while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
                         coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
                     }
-
+                    
                     // Display the popup at the park location
                     popup.setLngLat(coordinates)
                         .setHTML(popupHTML)
@@ -212,7 +357,7 @@
                     map.getCanvas().style.cursor = '';
                     popup.remove();
                 });
-
+                
                 // ===== HOVER POPUP FEATURE END =====
             });
         }
@@ -220,20 +365,22 @@
         geojsonFetch();
 
         const sortBtn = document.getElementById("sort-btn");
+
         sortBtn.addEventListener("click", function () {
             let table = document.querySelector("table");
+            let tbody = table.querySelector("tbody");
             let switching = true;
 
             while (switching) {
                 switching = false;
-                let rows = table.rows;
+                let rows = tbody.rows;
 
-                for (let i = 1; i < rows.length - 1; i++) {
+                for (let i = 0; i < rows.length - 1; i++) {
                     let x = parseFloat(rows[i].cells[1].innerHTML);
                     let y = parseFloat(rows[i + 1].cells[1].innerHTML);
 
                     if (x < y) {
-                        rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                        tbody.insertBefore(rows[i + 1], rows[i]);
                         switching = true;
                         break;
                     }
@@ -241,129 +388,159 @@
             }
         });
 
-        // This function find the distance in meters between two coordinate sets
-        function haversineDistanceMeters(lat1, lon1, lat2, lon2) {
-            function toRad(deg) { return deg * Math.PI / 180; }
-            const R = 6371000;
-            const dLat = toRad(lat2 - lat1);
-            const dLon = toRad(lon2 - lon1);
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-                      Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
-
-        // This creates a point from the coordinates and checks the data is good
-        function getFeatureLonLat(feature) {
-            if (!feature || !feature.geometry) return null;
-            const geom = feature.geometry;
-            if (geom.type === "Point") {
-                return geom.coordinates;
-            }
-            return null;
-        }
-
-        // format meters into km string
-        function formatDistance(meters) {
-            if (!isFinite(meters)) return "—";
-            if (meters < 1000) {
-                return Math.round(meters) + " m";
-            } else {
-                return (meters / 1000).toFixed(2) + " km";
-            }
-        }
-
-        // Sort by Distance button logic
-        const sortDistanceBtn = document.getElementById("sort-distance-btn");
-        sortDistanceBtn.addEventListener("click", function () {
-            if (!parksData || !parksData.features) {
-                alert("Parks data is still loading — try again in a second.");
-                return;
-            }
-
-            // Asks the user for their devices location
-            if (!navigator.geolocation) {
-                alert("Geolocation is not available in this browser.");
-                return;
-            }
-
-            sortDistanceBtn.disabled = true;
-            sortDistanceBtn.innerText = "Requesting location...";
-
-            navigator.geolocation.getCurrentPosition(function (pos) {
-                const userLat = pos.coords.latitude;
-                const userLon = pos.coords.longitude;
-
-                // Create or move a marker for the user's location
-                if (userMarker) {
-                    userMarker.remove();
-                    userMarker = null;
-                }
-                userMarker = new mapboxgl.Marker({ color: '#0074D9' })
-                    .setLngLat([userLon, userLat])
-                    .addTo(map);
-
-                // compute distance for each row using its parkIndex
-                const table = document.querySelector("table");
-                const rows = Array.from(table.rows).slice(1);
-
-                const rowsWithDistances = rows.map(row => {
-                    const idx = parseInt(row.dataset.parkIndex, 10);
-                    const feat = parksData.features[idx];
-                    let coords = getFeatureLonLat(feat);
-                    let distance = Infinity;
-                    if (coords && coords.length >= 2) {
-                        const featLon = coords[0];
-                        const featLat = coords[1];
-                        distance = haversineDistanceMeters(userLat, userLon, featLat, featLon);
-                    } else {
-                        distance = Infinity;
-                    }
-                    row.dataset.distanceMeters = distance;
-                    const dcell = row.cells[3];
-                    dcell.innerText = formatDistance(distance);
-                    return { row, distance };
-                });
-
-                rowsWithDistances.sort((a, b) => a.distance - b.distance);
-
-                for (let entry of rowsWithDistances) {
-                    table.tBodies[0].appendChild(entry.row);
-                }
-
-                sortDistanceBtn.innerText = "Sort by Distance";
-                sortDistanceBtn.disabled = false;
-
-                // Focus the map onto the user's location marker
-                if (userMarker) {
-                    map.flyTo({ center: [userLon, userLat], zoom: 14 });
-                    if (userMarker.getPopup) {
-                        userMarker.togglePopup();
-                    }
-                }
-
-            }, function (err) {
-                sortDistanceBtn.disabled = false;
-                sortDistanceBtn.innerText = "Sort by Distance";
-                if (err.code === err.PERMISSION_DENIED) {
-                    alert("Location permission denied. Can't sort by distance.");
-                } else {
-                    alert("Unable to get location: " + (err.message || "unknown error"));
-                }
-            }, {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            });
-        });
-
         const sidebar = document.getElementById("side-panel");
         const toggleBtn = document.getElementById("toggle-panel");
+        const overlay = document.getElementById("panel-overlay");
+
+        // Start collapsed on mobile devices
+        if (window.innerWidth <= 768) {
+            sidebar.classList.add("collapsed");
+        }
+
         toggleBtn.addEventListener("click", () => {
+            const isMobile = window.innerWidth <= 768;
             sidebar.classList.toggle("collapsed");
             toggleBtn.classList.toggle("shifted");
+            if (isMobile) {
+                overlay.classList.toggle("active");
+            }
         });
+
+        overlay.addEventListener("click", () => {
+            sidebar.classList.add("collapsed");
+            toggleBtn.classList.remove("shifted");
+            overlay.classList.remove("active");
+        });
+
+        // Nur: Radius filter feature start - event listeners
+        const radiusInput = document.getElementById("radius-input");
+        const radiusValue = document.getElementById("radius-value");
+        const filterStatus = document.getElementById("filter-status");
+        const useLocationBtn = document.getElementById("use-location-btn");
+
+        // Update radius display value
+        radiusInput.addEventListener("input", function() {
+            const radius = parseFloat(radiusInput.value);
+            radiusValue.textContent = radius.toFixed(1);
+            currentRadius = radius;
+            
+            // Apply filter if we have a location
+            if (userLocation && allParksData) {
+                const filteredParks = filterParksByRadius(allParksData, userLocation, radius);
+                updateFilteredParks(filteredParks);
+                
+                // Update status message
+                if (radius > 0) {
+                    filterStatus.textContent = `Showing ${filteredParks.features.length} parks within ${radius.toFixed(1)} miles`;
+                } else {
+                    filterStatus.textContent = "Showing all parks";
+                }
+            }
+        });
+
+        // Get user's current location or clear if already set
+        useLocationBtn.addEventListener("click", function() {
+            // If location is explicitly set, clear it
+            if (locationExplicitlySet && userLocationMarker) {
+                // Remove marker
+                userLocationMarker.remove();
+                userLocationMarker = null;
+                locationExplicitlySet = false;
+                
+                // Reset to Seattle center
+                const seattleCenter = [-122.335167, 47.608013];
+                userLocation = seattleCenter;
+                
+                // Fly back to Seattle center
+                map.flyTo({
+                    center: seattleCenter,
+                    zoom: 11
+                });
+                
+                // Reset button
+                useLocationBtn.textContent = "Use My Location";
+                useLocationBtn.style.background = "white";
+                useLocationBtn.style.color = "#1e90ff";
+                
+                // Update filter if radius is active
+                if (currentRadius > 0 && allParksData) {
+                    const filteredParks = filterParksByRadius(allParksData, userLocation, currentRadius);
+                    updateFilteredParks(filteredParks);
+                    filterStatus.textContent = `Showing ${filteredParks.features.length} parks within ${currentRadius.toFixed(1)} miles`;
+                } else if (allParksData) {
+                    updateFilteredParks(allParksData);
+                    filterStatus.textContent = "Showing all parks";
+                }
+                return;
+            }
+            
+            // Otherwise, get user's location
+            if (navigator.geolocation) {
+                useLocationBtn.textContent = "Getting location...";
+                useLocationBtn.disabled = true;
+                
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        userLocation = [position.coords.longitude, position.coords.latitude];
+                        locationExplicitlySet = true;
+                        useLocationBtn.textContent = "Clear Location";
+                        useLocationBtn.style.background = "#e74c3c";
+                        useLocationBtn.style.color = "white";
+                        
+                        // Nur: Add user location marker
+                        updateUserLocationMarker(userLocation);
+                        
+                        // Center map on user location
+                        map.flyTo({
+                            center: userLocation,
+                            zoom: 12
+                        });
+                        
+                        // Apply current radius filter
+                        if (currentRadius > 0 && allParksData) {
+                            const filteredParks = filterParksByRadius(allParksData, userLocation, currentRadius);
+                            updateFilteredParks(filteredParks);
+                            filterStatus.textContent = `Showing ${filteredParks.features.length} parks within ${currentRadius.toFixed(1)} miles`;
+                        }
+                        
+                        useLocationBtn.disabled = false;
+                    },
+                    function(error) {
+                        console.error("Error getting location:", error);
+                        useLocationBtn.textContent = "Location Error";
+                        useLocationBtn.style.background = "#e74c3c";
+                        useLocationBtn.style.color = "white";
+                        
+                        // Fallback to map center (no marker shown for fallback)
+                        userLocation = map.getCenter().toArray();
+                        locationExplicitlySet = false;
+                        
+                        setTimeout(() => {
+                            useLocationBtn.textContent = "Use My Location";
+                            useLocationBtn.style.background = "white";
+                            useLocationBtn.style.color = "#1e90ff";
+                            useLocationBtn.disabled = false;
+                        }, 2000);
+                    }
+                );
+            } else {
+                alert("Geolocation is not supported by your browser. Using map center as reference.");
+                userLocation = map.getCenter().toArray();
+                locationExplicitlySet = false;
+            }
+        });
+
+        // Update location when map center changes (if user manually moves map)
+        map.on('moveend', function() {
+            // Only update if user hasn't set their location explicitly
+            // We'll track this with a flag, but for simplicity, we'll use map center
+            // when radius filter is active and no explicit location was set
+            if (currentRadius > 0 && userLocation) {
+                // Optionally update to new center, or keep user's set location
+                // For now, we'll keep the user's set location unless they click the button again
+            }
+        });
+        // Nur: Radius filter feature end
     </script>
 
 </body>
