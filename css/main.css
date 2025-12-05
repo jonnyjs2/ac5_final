@@ -13,6 +13,7 @@ header nav {
     align-items: center;
     gap: 24px;
     padding: 14px 20px;
+    flex-wrap: wrap;
 }
 
 header nav a {
@@ -50,4 +51,28 @@ header nav a[aria-current="page"] {
 .nav-links a:hover,
 .nav-links a[aria-current="page"] {
     background: rgba(30,144,255,0.08);
+}
+
+@media (max-width: 640px) {
+    header nav {
+        gap: 12px;
+        padding: 12px 16px;
+    }
+
+    .nav-links {
+        width: 100%;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .nav-links a {
+        flex: 1 1 45%;
+        text-align: center;
+        min-height: 44px;
+    }
+
+    .logo {
+        width: 100%;
+    }
 }

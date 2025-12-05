@@ -108,13 +108,13 @@
 
 
 
-    <button id="toggle-panel">Parks</button>
-    <div id="panel-overlay"></div>
+    <button id="toggle-panel" aria-expanded="false" aria-controls="side-panel" aria-label="Toggle parks list panel">Parks</button>
+    <div id="panel-overlay" aria-hidden="true"></div>
 
     <main id="container">
 
         <div id="side-panel">
-            <h2>Seattle Parks</h2>
+            <h2 id="parks-title">Seattle Parks</h2>
 
             <!-- Nur: Radius filter feature start -->
             <div id="radius-filter-container" style="margin-bottom: 15px; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1);">
@@ -135,30 +135,51 @@
             </div>
             <!-- Nur: Radius filter feature end -->
 
-            <button id="sort-btn">Sort by PMA (desc) <br> (may take a few seconds)</button>
+            <button id="sort-btn">Sort by PMA (desc)</button>
             <button id="sort-distance-btn">Sort by Distance</button>
 
             <div class="table-container">
-                <table>
-                        <thead>
-                            <tr>
-                                <th>Park Name</th>
-                                <th>PMA</th>
-                                <th>Area (sq.m)</th>
-                                <th>Distance (mi)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        </tbody>
+                <table id="parks-table-head" class="parks-table">
+                    <colgroup>
+                        <col style="width:48%" />
+                        <col style="width:16%" />
+                        <col style="width:18%" />
+                        <col style="width:18%" />
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th><span class="header-label">Park Name</span></th>
+                            <th><span class="header-label">PMA</span></th>
+                            <th>
+                                <span class="header-label">Area</span>
+                                <span class="header-unit">(sq.m)</span>
+                            </th>
+                            <th>
+                                <span class="header-label">Distance</span>
+                                <span class="header-unit">(mi)</span>
+                            </th>
+                        </tr>
+                    </thead>
                 </table>
+
+                <div class="table-body-wrapper">
+                    <table id="parks-table" class="parks-table">
+                        <colgroup>
+                            <col style="width:48%" />
+                            <col style="width:16%" />
+                            <col style="width:18%" />
+                            <col style="width:18%" />
+                        </colgroup>
+                        <tbody id="parks-tbody">
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
         <div id="map"></div>
     </main>
 
-    <script src='https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js'></script>
-    
     <script>
         mapboxgl.accessToken =
             'pk.eyJ1Ijoiam9ubnlqczIiLCJhIjoiY21oZG56a3h5MDUybzJscHU5dDlveHEyMyJ9.Zj4MO5kQbqLf6QDwWWTs2A';
@@ -173,9 +194,8 @@
         // Sort by distance button behavior (ascending). Requires distances to be present.
         const sortDistanceBtn = document.getElementById('sort-distance-btn');
         if (sortDistanceBtn) {
-            sortDistanceBtn.addEventListener('click', function () {
-                const table = document.querySelector('table');
-                const tbody = table.querySelector('tbody');
+                sortDistanceBtn.addEventListener('click', function () {
+                const tbody = document.getElementById('parks-tbody');
                 const rows = Array.from(tbody.rows);
                 rows.sort((a, b) => {
                     const da = parseFloat(a.dataset.distance || Infinity);
@@ -244,8 +264,7 @@
             }
 
             // Update table
-            let table = document.querySelector("table");
-            let tbody = table.querySelector("tbody");
+            let tbody = document.getElementById('parks-tbody');
             // Remove all rows from tbody
             tbody.innerHTML = '';
 
@@ -300,8 +319,7 @@
             response = await fetch('assets/neighborhoods.geojson');
             neighborhoods = await response.json();
 
-            let table = document.querySelector("table");
-            let tbody = table.querySelector("tbody");
+            let tbody = document.getElementById('parks-tbody');
 
             for (let feature of parks.features) {
                 let row = tbody.insertRow(-1);
@@ -411,9 +429,8 @@
         // Update all distance cells using a center [lng, lat]
         function updateAllDistances(center) {
             if (!center) return;
-            const table = document.querySelector('table');
-            const tbody = table.querySelector('tbody');
-            const rows = Array.from(tbody.rows);
+                const tbody = document.getElementById('parks-tbody');
+                const rows = Array.from(tbody.rows);
             rows.forEach((row) => {
                 const parkIdx = row.dataset.parkIndex;
                 if (parkIdx !== undefined && allParksData && allParksData.features[parkIdx]) {
@@ -429,50 +446,86 @@
         const sortBtn = document.getElementById("sort-btn");
 
         sortBtn.addEventListener("click", function () {
-            let table = document.querySelector("table");
-            let tbody = table.querySelector("tbody");
-            let switching = true;
+            // More efficient sort: read rows into array, sort in-memory,
+            // then re-append using a DocumentFragment to minimize DOM reflows.
+            const tbody = document.getElementById('parks-tbody');
+            const rows = Array.from(tbody.rows);
 
-            while (switching) {
-                switching = false;
-                let rows = tbody.rows;
+            rows.sort((a, b) => {
+                const pa = parseFloat(a.cells[1].textContent) || 0;
+                const pb = parseFloat(b.cells[1].textContent) || 0;
+                // sort descending by PMA
+                return pb - pa;
+            });
 
-                for (let i = 0; i < rows.length - 1; i++) {
-                    let x = parseFloat(rows[i].cells[1].innerHTML);
-                    let y = parseFloat(rows[i + 1].cells[1].innerHTML);
-
-                    if (x < y) {
-                        tbody.insertBefore(rows[i + 1], rows[i]);
-                        switching = true;
-                        break;
-                    }
-                }
-            }
+            const frag = document.createDocumentFragment();
+            rows.forEach(r => frag.appendChild(r));
+            tbody.appendChild(frag);
         });
 
         const sidebar = document.getElementById("side-panel");
         const toggleBtn = document.getElementById("toggle-panel");
         const overlay = document.getElementById("panel-overlay");
 
+        const isMobileViewport = () => window.innerWidth <= 768;
+        const setToggleOffset = (isOpen) => {
+            if (!isMobileViewport()) {
+                toggleBtn.style.bottom = '';
+                toggleBtn.classList.remove("shifted");
+                return;
+            }
+            if (isOpen) {
+                const panelRect = sidebar.getBoundingClientRect();
+                const gap = 14;
+                const maxOffset = Math.max(panelRect.height + gap, 160);
+                const cappedOffset = Math.min(maxOffset, window.innerHeight - 72);
+                toggleBtn.style.bottom = `${cappedOffset}px`;
+                toggleBtn.classList.add("shifted");
+            } else {
+                toggleBtn.style.bottom = '14px';
+                toggleBtn.classList.remove("shifted");
+            }
+        };
+        const syncPanelState = (isOpen) => {
+            toggleBtn.setAttribute("aria-expanded", String(isOpen));
+            overlay.setAttribute("aria-hidden", String(!(isOpen && isMobileViewport())));
+            toggleBtn.classList.toggle("shifted", isOpen && isMobileViewport());
+            overlay.classList.toggle("active", isOpen && isMobileViewport());
+            setToggleOffset(isOpen);
+        };
+
         // Start collapsed on mobile devices
-        if (window.innerWidth <= 768) {
+        if (isMobileViewport()) {
             sidebar.classList.add("collapsed");
+            syncPanelState(false);
+        } else {
+            sidebar.classList.remove("collapsed");
+            syncPanelState(true);
         }
 
         toggleBtn.addEventListener("click", () => {
-            const isMobile = window.innerWidth <= 768;
+            const willOpen = sidebar.classList.contains("collapsed");
             sidebar.classList.toggle("collapsed");
-            toggleBtn.classList.toggle("shifted");
-            if (isMobile) {
-                overlay.classList.toggle("active");
-            }
+            syncPanelState(willOpen);
         });
 
         overlay.addEventListener("click", () => {
             sidebar.classList.add("collapsed");
-            toggleBtn.classList.remove("shifted");
-            overlay.classList.remove("active");
+            syncPanelState(false);
+            toggleBtn.focus();
         });
+
+        window.addEventListener("resize", () => {
+            if (isMobileViewport()) {
+                syncPanelState(!sidebar.classList.contains("collapsed"));
+            } else {
+                sidebar.classList.remove("collapsed");
+                syncPanelState(true);
+            }
+        });
+
+        // initial position on load
+        syncPanelState(!sidebar.classList.contains("collapsed"));
 
         // Nur: Radius filter feature start - event listeners
         const radiusInput = document.getElementById("radius-input");
